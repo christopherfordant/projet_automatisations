@@ -25,6 +25,10 @@ const copyDocumentMessageButton = document.getElementById("copy-document-message
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
+const operatorDashboardSummary = document.getElementById("operator-dashboard-summary");
+const operatorCriticalList = document.getElementById("operator-critical-list");
+const operatorBlockedList = document.getElementById("operator-blocked-list");
+const operatorRoutingList = document.getElementById("operator-routing-list");
 const batchTableBody = document.getElementById("batch-table-body");
 const caseDetail = document.getElementById("case-detail");
 const exportBatchButton = document.getElementById("export-batch");
@@ -440,6 +444,7 @@ async function runBatchAnalysis() {
         }));
 
         renderBatchSummary(data.summary);
+        renderOperatorDashboard(data.items);
         renderBatchTable(data.items);
         renderMissingActionsPanel(data.items);
         lastBatchItems = data.items;
@@ -872,6 +877,73 @@ function renderBatchSummary(summaryData) {
     `;
 }
 
+function renderOperatorDashboard(items) {
+    const effectiveItems = (items || []).map((item) => {
+        const override = manualStatusOverrides[buildItemKey(item)];
+        return {
+            ...item,
+            effective_status: override?.value || item.business_status,
+            effective_status_label: override?.label || item.business_status_label,
+        };
+    });
+
+    const criticalItems = effectiveItems.filter((item) => item.attention_level === "critical");
+    const blockedItems = effectiveItems.filter((item) => item.effective_status === "blocked");
+    const followupItems = effectiveItems.filter((item) => item.missing_information?.length);
+    const routingItems = effectiveItems.filter((item) =>
+        ["ready_to_route", "ready_for_priority_queue", "validated"].includes(item.effective_status),
+    );
+
+    operatorDashboardSummary.innerHTML = `
+        <div class="metric">
+            <span>File critique</span>
+            <strong>${escapeHtml(criticalItems.length || "-")}</strong>
+        </div>
+        <div class="metric">
+            <span>Dossiers bloques</span>
+            <strong>${escapeHtml(blockedItems.length || "-")}</strong>
+        </div>
+        <div class="metric">
+            <span>Relances pretes</span>
+            <strong>${escapeHtml(followupItems.length || "-")}</strong>
+        </div>
+        <div class="metric">
+            <span>Pret a router</span>
+            <strong>${escapeHtml(routingItems.length || "-")}</strong>
+        </div>
+    `;
+
+    operatorCriticalList.innerHTML = renderOperatorLane(
+        criticalItems,
+        "Aucun dossier critique.",
+        (item) =>
+            `${item.contract_id || item.customer_id || "Sans reference"} • ${item.category_label} • ${item.attention_level_label}`,
+    );
+    operatorBlockedList.innerHTML = renderOperatorLane(
+        blockedItems,
+        "Aucun blocage actif.",
+        (item) =>
+            `${item.contract_id || item.customer_id || "Sans reference"} • ${item.missing_information_labels.join(", ") || "A revoir"}`,
+    );
+    operatorRoutingList.innerHTML = renderOperatorLane(
+        routingItems,
+        "Aucun dossier pret a router.",
+        (item) =>
+            `${item.contract_id || item.customer_id || "Sans reference"} • ${item.effective_status_label} • ${item.recommended_next_action_label}`,
+    );
+}
+
+function renderOperatorLane(items, emptyLabel, formatter) {
+    if (!items.length) {
+        return `<li>${escapeHtml(emptyLabel)}</li>`;
+    }
+
+    return items
+        .slice(0, 8)
+        .map((item) => `<li>${escapeHtml(formatter(item))}</li>`)
+        .join("");
+}
+
 function setDocumentSummary({ type, status, completion }) {
     documentSummary.innerHTML = `
         <div><dt>Type</dt><dd>${escapeHtml(type)}</dd></div>
@@ -1069,6 +1141,27 @@ function resetBatchVisuals(status = "-") {
     batchTableBody.innerHTML = '<tr><td colspan="11">Aucun batch lance.</td></tr>';
     caseDetail.innerHTML = '<p class="csv-status">Clique sur une ligne du batch pour afficher le detail du dossier.</p>';
     missingActionsPanel.innerHTML = '<p class="csv-status">Lance un batch pour afficher les relances pretes a traiter.</p>';
+    operatorDashboardSummary.innerHTML = `
+        <div class="metric">
+            <span>File critique</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+        <div class="metric">
+            <span>Dossiers bloques</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+        <div class="metric">
+            <span>Relances pretes</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+        <div class="metric">
+            <span>Pret a router</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+    `;
+    operatorCriticalList.innerHTML = "<li>Aucun batch lance.</li>";
+    operatorBlockedList.innerHTML = "<li>Aucun batch lance.</li>";
+    operatorRoutingList.innerHTML = "<li>Aucun batch lance.</li>";
 }
 
 function hydrateCategoryFilter(items) {
@@ -1165,6 +1258,7 @@ function handleStatusOverrideChange(event) {
     });
 
     renderBatchTable(lastBatchItems);
+    renderOperatorDashboard(lastBatchItems);
     applyBatchFilters();
     const updatedItem = lastBatchItems.find((item) => buildItemKey(item) === itemKey);
     if (updatedItem && selectedItemKey === itemKey) {

@@ -625,6 +625,31 @@ button:disabled {
     min-height: 130px;
 }
 
+.operator-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.operator-lane {
+    padding: 16px;
+    border: 1px solid rgba(216, 207, 190, 0.9);
+    border-radius: 18px;
+    background: #faf5eb;
+}
+
+.operator-lane h3 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+}
+
+.operator-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font: 400 0.92rem/1.5 "Segoe UI", sans-serif;
+}
+
 @media (max-width: 640px) {
     .layout {
         padding: 20px 14px 40px;

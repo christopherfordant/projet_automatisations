@@ -18,6 +18,37 @@
         </section>
 
         <section class="panel">
+            <div class="csv-panel">
+                <div>
+                    <p class="section-kicker">Import CSV</p>
+                    <h2>Charger des dossiers en masse</h2>
+                    <p class="hint">
+                        Importe un fichier CSV, choisis une ligne, puis le formulaire se pre-remplit
+                        automatiquement avec les donnees detectees.
+                    </p>
+                </div>
+
+                <div class="csv-actions">
+                    <label class="csv-field">
+                        Fichier CSV
+                        <input type="file" id="csv-file" accept=".csv,text/csv">
+                    </label>
+
+                    <label class="csv-field">
+                        Ligne a tester
+                        <select id="csv-row-select">
+                            <option value="">Aucune ligne chargee</option>
+                        </select>
+                    </label>
+
+                    <a class="csv-link" href="/static/claims_intake_template.csv" download>
+                        Telecharger un modele CSV
+                    </a>
+                </div>
+
+                <p id="csv-status" class="csv-status">Aucun CSV charge.</p>
+            </div>
+
             <form id="claims-form" class="form">
                 <label>
                     Canal
@@ -96,6 +127,11 @@
         <section class="card">
             <h2>Reponse technique complete</h2>
             <pre id="raw-output" class="output">Le JSON complet apparaitra ici.</pre>
+        </section>
+
+        <section class="card">
+            <h2>Apercu CSV charge</h2>
+            <pre id="csv-preview" class="output">Aucun apercu disponible.</pre>
         </section>
     </main>
 

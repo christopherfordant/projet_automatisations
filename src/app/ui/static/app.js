@@ -5,6 +5,11 @@ const missingList = document.getElementById("missing-list");
 const operatorSummary = document.getElementById("operator-summary");
 const rawOutput = document.getElementById("raw-output");
 const claimText = form.claim_text;
+const csvFileInput = document.getElementById("csv-file");
+const csvRowSelect = document.getElementById("csv-row-select");
+const csvStatus = document.getElementById("csv-status");
+const csvPreview = document.getElementById("csv-preview");
+let csvRows = [];
 
 fillExample.addEventListener("click", () => {
     form.channel.value = "email";
@@ -18,6 +23,8 @@ fillExample.addEventListener("click", () => {
 });
 
 claimText.addEventListener("input", autofillIdentifiers);
+csvFileInput.addEventListener("change", handleCsvUpload);
+csvRowSelect.addEventListener("change", applySelectedCsvRow);
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -126,4 +133,129 @@ function autofillIdentifiers() {
     if (!form.contract_id.value && contractMatch) {
         form.contract_id.value = contractMatch[1].toUpperCase();
     }
+}
+
+async function handleCsvUpload(event) {
+    const [file] = event.target.files;
+    if (!file) {
+        csvStatus.textContent = "Aucun CSV charge.";
+        csvPreview.textContent = "Aucun apercu disponible.";
+        csvRowSelect.innerHTML = '<option value="">Aucune ligne chargee</option>';
+        csvRows = [];
+        return;
+    }
+
+    const content = await file.text();
+    csvRows = parseCsv(content);
+
+    if (csvRows.length === 0) {
+        csvStatus.textContent = "Le fichier est vide ou invalide.";
+        csvPreview.textContent = content;
+        csvRowSelect.innerHTML = '<option value="">Aucune ligne exploitable</option>';
+        return;
+    }
+
+    csvStatus.textContent = `${csvRows.length} ligne(s) detectee(s) dans ${file.name}.`;
+    csvPreview.textContent = JSON.stringify(csvRows.slice(0, 3), null, 2);
+    csvRowSelect.innerHTML = csvRows
+        .map((row, index) => {
+            const label = row.customer_id || row.contract_id || row.claim_text || `Ligne ${index + 1}`;
+            return `<option value="${index}">Ligne ${index + 1} - ${escapeHtml(label).slice(0, 80)}</option>`;
+        })
+        .join("");
+
+    csvRowSelect.value = "0";
+    applyCsvRow(csvRows[0]);
+}
+
+function applySelectedCsvRow() {
+    const index = Number(csvRowSelect.value);
+    if (Number.isNaN(index) || !csvRows[index]) {
+        return;
+    }
+
+    applyCsvRow(csvRows[index]);
+}
+
+function applyCsvRow(row) {
+    form.channel.value = normalizeChannel(row.channel);
+    form.customer_id.value = row.customer_id || row.client_id || "";
+    form.contract_id.value =
+        row.contract_id || row.case_id || row.dossier_id || row.claim_id || "";
+    form.provider.value = row.provider || "mock";
+    form.claim_text.value = row.claim_text || row.message || row.description || "";
+    form.attached_documents.value =
+        row.attached_documents || row.documents || row.pieces_jointes || "";
+    autofillIdentifiers();
+}
+
+function normalizeChannel(value) {
+    const normalized = (value || "").trim().toLowerCase();
+    if (["email", "telephone", "courrier", "portail"].includes(normalized)) {
+        return normalized;
+    }
+    return "email";
+}
+
+function parseCsv(content) {
+    const lines = content
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    if (lines.length < 2) {
+        return [];
+    }
+
+    const headers = splitCsvLine(lines[0]).map(normalizeHeader);
+    return lines.slice(1).map((line) => {
+        const values = splitCsvLine(line);
+        const row = {};
+
+        headers.forEach((header, index) => {
+            row[header] = (values[index] || "").trim();
+        });
+
+        return row;
+    });
+}
+
+function splitCsvLine(line) {
+    const values = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let index = 0; index < line.length; index += 1) {
+        const char = line[index];
+        const nextChar = line[index + 1];
+
+        if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+                current += '"';
+                index += 1;
+            } else {
+                inQuotes = !inQuotes;
+            }
+            continue;
+        }
+
+        if (char === "," && !inQuotes) {
+            values.push(current);
+            current = "";
+            continue;
+        }
+
+        current += char;
+    }
+
+    values.push(current);
+    return values;
+}
+
+function normalizeHeader(header) {
+    return header
+        .trim()
+        .toLowerCase()
+        .replaceAll(" ", "_")
+        .replaceAll("-", "_");
 }

@@ -73,6 +73,54 @@ h1 {
     margin: 18px 0 22px;
 }
 
+.csv-panel {
+    display: grid;
+    gap: 16px;
+    padding-bottom: 22px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid rgba(216, 207, 190, 0.9);
+}
+
+.section-kicker {
+    margin: 0 0 6px;
+    color: var(--accent-2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font: 700 0.74rem/1.2 "Segoe UI", sans-serif;
+}
+
+.csv-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    align-items: end;
+}
+
+.csv-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.csv-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    background: #eadfca;
+    color: var(--ink);
+    text-decoration: none;
+    font: 700 0.96rem/1.2 "Segoe UI", sans-serif;
+}
+
+.csv-status {
+    margin: 0;
+    color: var(--muted);
+    font: 400 0.92rem/1.4 "Segoe UI", sans-serif;
+}
+
 .form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

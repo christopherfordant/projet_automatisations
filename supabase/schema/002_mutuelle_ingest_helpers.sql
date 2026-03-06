@@ -180,3 +180,32 @@ select
 from public.claim_cases
 where jsonb_array_length(coalesce(missing_information, '[]'::jsonb)) > 0
   and coalesce(client_request_message, '') <> '';
+
+
+create or replace view public.operator_dashboard_metrics as
+select
+    count(*) as total_cases,
+    count(*) filter (where attention_level = 'critical') as critical_queue,
+    count(*) filter (where business_status = 'blocked') as blocked_cases,
+    count(*) filter (where jsonb_array_length(coalesce(missing_information, '[]'::jsonb)) > 0) as followup_ready,
+    count(*) filter (
+        where business_status in ('ready_to_route', 'ready_for_priority_queue')
+    ) as ready_to_route
+from public.claim_cases;
+
+
+create or replace view public.operator_dashboard_worklist as
+select
+    id,
+    customer_id,
+    contract_id,
+    category_label,
+    priority_label,
+    attention_level_label,
+    business_status_label,
+    recommended_next_action_label,
+    client_request_subject,
+    client_request_message,
+    created_at
+from public.claim_cases
+order by created_at desc;

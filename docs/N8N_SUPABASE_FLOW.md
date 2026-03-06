@@ -126,6 +126,8 @@ Le schema `supabase/schema/002_mutuelle_ingest_helpers.sql` ajoute:
 - `save_document_check(...)`
 - `log_operator_action(...)`
 - vue `claim_cases_ready_for_followup`
+- vue `operator_dashboard_metrics`
+- vue `operator_dashboard_worklist`
 
 ## Application du schema
 
@@ -251,6 +253,28 @@ retourne les dossiers avec:
 - informations manquantes
 - message client deja genere
 - references utiles pour une campagne de relance
+
+## Tableau operateur persistant en base
+
+Vue synthese:
+
+```sql
+select * from public.operator_dashboard_metrics;
+```
+
+Vue liste de travail:
+
+```sql
+select * from public.operator_dashboard_worklist;
+```
+
+Ces vues permettent a `Supabase`, `n8n` ou une future interface operateur de lire:
+
+- les volumes a traiter
+- les dossiers critiques
+- les dossiers bloques
+- les relances preparees
+- les dossiers pret a router
 
 ## Usage cible
 

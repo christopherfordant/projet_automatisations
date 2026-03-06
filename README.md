@@ -71,6 +71,7 @@ Helpers SQL ajoutes:
 - fonction `save_document_check(...)` pour stocker une verification documentaire
 - fonction `log_operator_action(...)` pour tracer les actions operateur
 - vue `claim_cases_ready_for_followup` pour les campagnes de relance
+- vues `operator_dashboard_metrics` et `operator_dashboard_worklist` pour un tableau operateur persistant
 
 ## Demarrage local
 

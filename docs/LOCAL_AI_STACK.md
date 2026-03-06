@@ -24,6 +24,7 @@ Faire evoluer l'application actuelle vers une vraie infrastructure locale gratui
 - `infra/docker-compose.local.yml`
 - `.env.stack.example`
 - `scripts/start_local_ai_stack.ps1`
+- `scripts/start_n8n_local.ps1`
 
 Cette base demarre:
 
@@ -31,6 +32,12 @@ Cette base demarre:
 - `n8n`
 - `qdrant`
 - `ollama`
+
+Si Docker n'est pas disponible, `n8n` peut aussi etre lance en local avec:
+
+```powershell
+.\scripts\start_n8n_local.ps1
+```
 
 ## Supabase local
 

@@ -81,6 +81,12 @@ Dans n8n:
 4. sauvegarder le workflow
 5. l'activer si besoin
 
+Si Docker n'est pas disponible, lancer d'abord:
+
+```powershell
+.\scripts\start_n8n_local.ps1
+```
+
 Pour le batch:
 
 1. `Import from file`

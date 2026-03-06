@@ -17,3 +17,8 @@ coverage.xml
 .idea/
 .vscode/
 node_modules/
+.n8n-local/
+n8n.stdout.log
+n8n.stderr.log
+node-v22.19.0-win-x64.zip
+node-v22.19.0-win-x64/

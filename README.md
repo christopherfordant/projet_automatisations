@@ -24,6 +24,7 @@ Le socle est pense pour:
 - `src/app/connectors`: connecteurs vers services mutuelles.
 - `scripts/setup_local.ps1`: bootstrap local.
 - `scripts/start_local_ai_stack.ps1`: demarrage de la stack locale d'infrastructure.
+- `scripts/start_n8n_local.ps1`: lancement local de `n8n` sans Docker avec le runtime Node 22 du projet.
 - `infra/docker-compose.local.yml`: socle local `n8n + Postgres + Qdrant + Ollama`.
 - `docs/LOCAL_AI_STACK.md`: architecture cible.
 - `docs/N8N_SUPABASE_FLOW.md`: branchement `n8n + FastAPI + Supabase`.
@@ -133,6 +134,16 @@ Cette commande demarre:
 ```powershell
 supabase start
 ```
+
+## Demarrage local de n8n sans Docker
+
+Si Docker n'est pas disponible sur la machine, tu peux lancer `n8n` directement avec le runtime Node 22 embarque dans le projet:
+
+```powershell
+.\scripts\start_n8n_local.ps1
+```
+
+Par defaut, l'interface sera disponible sur `http://127.0.0.1:5678`.
 
 ## Endpoints initiaux
 

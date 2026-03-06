@@ -28,6 +28,13 @@ let csvRows = [];
 let lastBatchItems = [];
 let manualStatusOverrides = {};
 let actionLogEntries = [];
+const STORAGE_KEYS = {
+    overrides: "mutuelle_ai_platform.manual_status_overrides",
+    actionLog: "mutuelle_ai_platform.action_log_entries",
+};
+
+loadPersistedState();
+renderActionLog();
 
 fillExample.addEventListener("click", () => {
     form.channel.value = "email";
@@ -567,6 +574,7 @@ function findSourceLabel(item) {
 function resetBatchVisuals(status = "-") {
     lastBatchItems = [];
     manualStatusOverrides = {};
+    persistOverrides();
     exportBatchButton.disabled = true;
     filterPriority.value = "";
     filterCategory.innerHTML = '<option value="">Toutes</option>';
@@ -645,7 +653,7 @@ function applyBatchFilters() {
     if (visibleCount === 0) {
         batchFilterStatus.textContent = "Aucun dossier ne correspond aux filtres.";
     } else {
-        batchFilterStatus.textContent = `${visibleCount} dossier(s) affiché(s) apres filtrage.`;
+        batchFilterStatus.textContent = `${visibleCount} dossier(s) affiches apres filtrage.`;
     }
 }
 
@@ -664,6 +672,7 @@ function handleStatusOverrideChange(event) {
     } else {
         manualStatusOverrides[itemKey] = { value, label };
     }
+    persistOverrides();
 
     lastBatchItems = lastBatchItems.map((item) => {
         if (buildItemKey(item) !== itemKey) {
@@ -718,6 +727,8 @@ function addLogEntry({ action, source, caseRef, detail }) {
         caseRef,
         detail,
     });
+    actionLogEntries = actionLogEntries.slice(0, 200);
+    persistActionLog();
     renderActionLog();
 }
 
@@ -742,5 +753,31 @@ function renderActionLog() {
 
 function clearActionLog() {
     actionLogEntries = [];
+    persistActionLog();
     renderActionLog();
+}
+
+function loadPersistedState() {
+    try {
+        const storedOverrides = localStorage.getItem(STORAGE_KEYS.overrides);
+        const storedLog = localStorage.getItem(STORAGE_KEYS.actionLog);
+
+        manualStatusOverrides = storedOverrides ? JSON.parse(storedOverrides) : {};
+        actionLogEntries = storedLog ? JSON.parse(storedLog) : [];
+    } catch {
+        manualStatusOverrides = {};
+        actionLogEntries = [];
+    }
+}
+
+function persistOverrides() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.overrides, JSON.stringify(manualStatusOverrides));
+    } catch {}
+}
+
+function persistActionLog() {
+    try {
+        localStorage.setItem(STORAGE_KEYS.actionLog, JSON.stringify(actionLogEntries));
+    } catch {}
 }

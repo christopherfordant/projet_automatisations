@@ -12,6 +12,7 @@ const carrierRulesList = document.getElementById("carrier-rules-list");
 const fillExample = document.getElementById("fill-example");
 const summary = document.getElementById("summary");
 const documentSummary = document.getElementById("document-summary");
+const documentRequestSummary = document.getElementById("document-request-summary");
 const attentionSummary = document.getElementById("attention-summary");
 const missingList = document.getElementById("missing-list");
 const documentMissingList = document.getElementById("document-missing-list");
@@ -19,6 +20,7 @@ const documentPresentList = document.getElementById("document-present-list");
 const frictionList = document.getElementById("friction-list");
 const operatorSummary = document.getElementById("operator-summary");
 const documentOutput = document.getElementById("document-output");
+const documentRequestMessage = document.getElementById("document-request-message");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
@@ -231,6 +233,7 @@ documentForm.addEventListener("submit", async (event) => {
         status: "Analyse...",
         completion: "-",
     });
+    renderDocumentRequestMessage("-", "Generation du message en cours...");
     documentMissingList.innerHTML = "<li>Verification en cours...</li>";
     documentPresentList.innerHTML = "<li>Verification en cours...</li>";
     documentOutput.textContent = "Chargement...";
@@ -255,6 +258,7 @@ documentForm.addEventListener("submit", async (event) => {
             completion: `${data.completion_ratio}%`,
         });
         renderDocumentLists(data);
+        renderDocumentRequestMessage(data.client_request_subject, data.client_request_message);
         documentOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
         setDocumentSummary({
@@ -262,6 +266,7 @@ documentForm.addEventListener("submit", async (event) => {
             status: "Erreur",
             completion: "-",
         });
+        renderDocumentRequestMessage("-", "Impossible de generer le message client.");
         documentMissingList.innerHTML = "<li>La verification a echoue.</li>";
         documentPresentList.innerHTML = "<li>Aucun resultat.</li>";
         documentOutput.textContent = String(error);
@@ -782,6 +787,13 @@ function setDocumentSummary({ type, status, completion }) {
         <div><dt>Etat</dt><dd>${escapeHtml(status)}</dd></div>
         <div><dt>Completude</dt><dd>${escapeHtml(completion)}</dd></div>
     `;
+}
+
+function renderDocumentRequestMessage(subject, message) {
+    documentRequestSummary.innerHTML = `
+        <div><dt>Sujet</dt><dd>${escapeHtml(subject || "-")}</dd></div>
+    `;
+    documentRequestMessage.textContent = message || "Le message client apparaitra ici.";
 }
 
 function renderDocumentLists(data) {

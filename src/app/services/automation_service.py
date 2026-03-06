@@ -279,6 +279,13 @@ class AutomationService:
             model=settings.default_ai_model,
         )
         ai_result = await provider.generate(prompt)
+        request_message = self._build_missing_documents_message(
+            profile_label=profile["label"],
+            customer_id=payload.customer_id,
+            contract_id=payload.contract_id,
+            missing_required_labels=[item.title() for item in missing_required],
+            readiness_status=readiness_status,
+        )
 
         return {
             "module": "document_completeness",
@@ -293,6 +300,8 @@ class AutomationService:
             "completion_ratio": completion_ratio,
             "readiness_status": readiness_status,
             "readiness_status_label": self._format_readiness_status(readiness_status),
+            "client_request_subject": request_message["subject"],
+            "client_request_message": request_message["message"],
             "operator_summary": ai_result["content"],
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
@@ -530,6 +539,46 @@ class AutomationService:
             "blocked": "Bloque documentaire",
         }
         return labels.get(status, status)
+
+    @staticmethod
+    def _build_missing_documents_message(
+        profile_label: str,
+        customer_id: str | None,
+        contract_id: str | None,
+        missing_required_labels: list[str],
+        readiness_status: str,
+    ) -> dict[str, str]:
+        reference = contract_id or customer_id or "votre dossier"
+        if not missing_required_labels:
+            return {
+                "subject": f"Dossier complet - {reference}",
+                "message": (
+                    "Bonjour,\n\n"
+                    f"Votre dossier {reference} est considere comme complet pour le traitement "
+                    f"de la demande de type {profile_label.lower()}.\n"
+                    "Nos equipes peuvent poursuivre l'instruction.\n\n"
+                    "Cordialement,\nService gestion"
+                ),
+            }
+
+        intro = (
+            "Bonjour,\n\n"
+            f"Pour poursuivre le traitement de votre dossier {reference} "
+            f"concernant {profile_label.lower()}, nous avons encore besoin des elements suivants :\n"
+        )
+        missing_lines = "\n".join(f"- {item}" for item in missing_required_labels)
+        outro = (
+            "\n\nMerci de nous transmettre ces documents via votre espace client ou par retour de message.\n"
+        )
+        if readiness_status == "blocked":
+            outro += "Le dossier reste en attente tant que ces pieces ne sont pas recues.\n"
+        else:
+            outro += "Une fois ces pieces recues, nous pourrons finaliser l'instruction.\n"
+        outro += "\nCordialement,\nService gestion"
+        return {
+            "subject": f"Pieces manquantes pour votre dossier - {reference}",
+            "message": intro + missing_lines + outro,
+        }
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

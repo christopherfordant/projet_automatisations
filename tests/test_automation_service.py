@@ -83,6 +83,8 @@ def test_document_completeness_returns_missing_required_documents() -> None:
     assert result["document_type_label"] == "Devis optique"
     assert result["readiness_status"] == "partial"
     assert "Ordonnance" in result["missing_required_labels"]
+    assert "Pieces manquantes" in result["client_request_subject"]
+    assert "- Ordonnance" in result["client_request_message"]
 
 
 def test_document_completeness_can_be_ready() -> None:
@@ -107,3 +109,4 @@ def test_document_completeness_can_be_ready() -> None:
     assert result["readiness_status"] == "ready"
     assert result["completion_ratio"] == 100
     assert result["missing_required_labels"] == []
+    assert "Dossier complet" in result["client_request_subject"]

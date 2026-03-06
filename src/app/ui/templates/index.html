@@ -15,9 +15,72 @@
                 Cette page envoie une demande vers l'API et affiche une reponse interpretable:
                 categorie, priorite, informations manquantes et prochaine action.
             </p>
+            <p class="hint">
+                Point d'entree adapte au contexte des mutuelles de Niort: MAAF, MACIF, MAIF
+                et a une logique de plateforme modulaire plus avancee.
+            </p>
         </section>
 
         <section class="panel">
+            <div class="carrier-panel">
+                <div>
+                    <p class="section-kicker">Profil mutuelle</p>
+                    <h2>Dissocier les specificites par organisme</h2>
+                    <p class="hint">
+                        Choisis une mutuelle cible pour afficher ses priorites, ses attentes documentaires
+                        et un cadrage de test plus proche d'un vrai contexte metier.
+                    </p>
+                </div>
+
+                <div class="carrier-selector">
+                    <label class="csv-field">
+                        Mutuelle cible
+                        <select id="carrier-profile">
+                            <option value="generic">Pole mutuelles de Niort</option>
+                            <option value="maaf">MAAF</option>
+                            <option value="macif">MACIF</option>
+                            <option value="maif">MAIF</option>
+                            <option value="niort_lab">Plateforme Niort Lab</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="carrier-overview">
+                    <article class="carrier-card carrier-card-main">
+                        <p id="carrier-badge" class="carrier-badge">Pole niortais</p>
+                        <h3 id="carrier-title">Base commune MAAF, MACIF, MAIF</h3>
+                        <p id="carrier-description" class="hint">
+                            Tronc commun pour tester une demande sante ou relation adherent dans
+                            l'ecosysteme mutualiste niortais.
+                        </p>
+                    </article>
+                    <article class="carrier-card">
+                        <h3>Focus metier</h3>
+                        <ul id="carrier-focus-list" class="carrier-list">
+                            <li>Tri des demandes entrantes</li>
+                            <li>Verification des pieces</li>
+                            <li>Routage vers le bon service</li>
+                        </ul>
+                    </article>
+                    <article class="carrier-card">
+                        <h3>Pieces attendues</h3>
+                        <ul id="carrier-documents-list" class="carrier-list">
+                            <li>Facture</li>
+                            <li>Numero adherent</li>
+                            <li>Reference dossier</li>
+                        </ul>
+                    </article>
+                    <article class="carrier-card">
+                        <h3>Regles de test</h3>
+                        <ul id="carrier-rules-list" class="carrier-list">
+                            <li>Prioriser les dossiers urgents</li>
+                            <li>Bloquer les dossiers incomplets</li>
+                            <li>Remonter les reclamations a revoir</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+
             <div class="csv-panel">
                 <div>
                     <p class="section-kicker">Import CSV</p>
@@ -92,6 +155,11 @@
                         <option value="courrier">Courrier</option>
                         <option value="portail">Portail</option>
                     </select>
+                </label>
+
+                <label>
+                    Profil mutuelle applique
+                    <input type="text" id="carrier-profile-readonly" value="Profil generique mutuelle" readonly>
                 </label>
 
                 <label>

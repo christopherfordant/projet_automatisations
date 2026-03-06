@@ -1,4 +1,12 @@
 const form = document.getElementById("claims-form");
+const carrierProfileSelect = document.getElementById("carrier-profile");
+const carrierProfileReadonly = document.getElementById("carrier-profile-readonly");
+const carrierBadge = document.getElementById("carrier-badge");
+const carrierTitle = document.getElementById("carrier-title");
+const carrierDescription = document.getElementById("carrier-description");
+const carrierFocusList = document.getElementById("carrier-focus-list");
+const carrierDocumentsList = document.getElementById("carrier-documents-list");
+const carrierRulesList = document.getElementById("carrier-rules-list");
 const fillExample = document.getElementById("fill-example");
 const summary = document.getElementById("summary");
 const missingList = document.getElementById("missing-list");
@@ -30,25 +38,141 @@ let lastBatchItems = [];
 let manualStatusOverrides = {};
 let actionLogEntries = [];
 let selectedItemKey = "";
+const CARRIER_PROFILES = {
+    generic: {
+        badge: "Pole niortais",
+        title: "Base commune MAAF, MACIF, MAIF",
+        description: "Tronc commun pour tester l'analyse d'une demande dans l'ecosysteme mutualiste de Niort.",
+        focus: [
+            "Tri des demandes entrantes sante",
+            "Verification des pieces et references adherent",
+            "Routage vers le bon service de gestion",
+        ],
+        documents: ["Facture", "Numero adherent", "Reference dossier", "Canal d'origine"],
+        rules: [
+            "Prioriser les dossiers urgents",
+            "Bloquer les dossiers incomplets",
+            "Remonter les reclamations a revoir",
+        ],
+        sample: {
+            channel: "email",
+            claim_text:
+                "Bonjour, client CL-2048, dossier DOS-7788, j'ai une relance urgente pour un remboursement de facture en retard. Je n'ai toujours pas de retour sur mon dossier.",
+            attached_documents: "facture dentaire",
+        },
+    },
+    maaf: {
+        badge: "Mutuelle cible MAAF",
+        title: "Remboursement et devis standardises",
+        description: "Profil oriente remboursements, devis sante et suivi de pieces classiques.",
+        focus: [
+            "Suivi de remboursement",
+            "Qualification de devis optique et dentaire",
+            "Detection des relances client",
+        ],
+        documents: ["Facture acquittee", "Devis", "Numero adherent"],
+        rules: [
+            "Orienter vite les relances de remboursement",
+            "Controler la presence d'une facture ou d'un devis",
+            "Basculer les urgences en file prioritaire",
+        ],
+        sample: {
+            channel: "portail",
+            claim_text:
+                "Bonjour, adherent MAAF CL-6721, dossier DOS-5510, je relance un remboursement optique urgent depose sur le portail avec un devis et une facture.",
+            attached_documents: "devis optique, facture optique",
+        },
+    },
+    macif: {
+        badge: "Mutuelle cible MACIF",
+        title: "Reclamations et suivi relation adherent",
+        description: "Profil centre sur les reclamations de delai, la satisfaction et les cas a reviser.",
+        focus: [
+            "Reclamations de delai",
+            "Demandes de suivi adherent",
+            "Escalade des cas sensibles",
+        ],
+        documents: ["Courrier de reclamation", "Numero dossier", "Historique echanges"],
+        rules: [
+            "Faire remonter les reclamations en revue humaine",
+            "Conserver la trace des delais annonces",
+            "Identifier les demandes repetitives",
+        ],
+        sample: {
+            channel: "email",
+            claim_text:
+                "Bonjour, client MACIF CL-8812, dossier REC-3201, je depose une reclamation car mon remboursement est en attente depuis trois semaines sans reponse.",
+            attached_documents: "courrier reclamation, historique echanges",
+        },
+    },
+    maif: {
+        badge: "Mutuelle cible MAIF",
+        title: "Accompagnement et traitement contextualise",
+        description: "Profil utile pour les dossiers demandant plus de contexte, d'accompagnement et de coordination.",
+        focus: [
+            "Demandes contextualisees",
+            "Hospitalisation et cas urgents",
+            "Suivi de dossier avec plusieurs echanges",
+        ],
+        documents: ["Compte rendu", "Facture", "Reference contrat"],
+        rules: [
+            "Valoriser les signaux d'urgence",
+            "Consolider les pieces disperses",
+            "Verifier les references de contrat avant routage",
+        ],
+        sample: {
+            channel: "telephone",
+            claim_text:
+                "Bonjour, assure MAIF CL-5504, dossier HOSP-8122, j'appelle pour une hospitalisation recente et une prise en charge a verifier rapidement.",
+            attached_documents: "compte rendu hospitalisation, facture clinique",
+        },
+    },
+    niort_lab: {
+        badge: "Plateforme Niort Lab",
+        title: "Orchestration avancee pour mutuelles niortaises",
+        description: "Profil de demonstration pour une plateforme modulaire, batchable et exploitable par API au-dessus des besoins MAAF, MACIF et MAIF.",
+        focus: [
+            "Orchestration API par cas d'usage",
+            "Traitement batch et routage intelligent",
+            "Preparation a l'integration SI locale",
+        ],
+        documents: ["CSV source", "Identifiants client", "Pieces justificatives normalisees"],
+        rules: [
+            "Distinguer les besoins par mutuelle des l'entree",
+            "Standardiser les sorties pour un usage API",
+            "Permettre l'override operateur sans perdre la trace",
+        ],
+        sample: {
+            channel: "courrier",
+            claim_text:
+                "Bonjour, client LAB-9031, dossier DOS-9902, merci de qualifier ce dossier complexe pour routage prioritaire et controle des pieces justificatives.",
+            attached_documents: "facture, attestation, courrier client",
+        },
+    },
+};
 const STORAGE_KEYS = {
     overrides: "mutuelle_ai_platform.manual_status_overrides",
     actionLog: "mutuelle_ai_platform.action_log_entries",
 };
 
 loadPersistedState();
+renderCarrierProfile();
 renderActionLog();
 
 fillExample.addEventListener("click", () => {
-    form.channel.value = "email";
+    const profile = getCurrentCarrierProfile();
+    form.channel.value = profile.sample.channel;
     form.customer_id.value = "";
     form.contract_id.value = "";
     form.provider.value = "mock";
-    form.claim_text.value =
-        "Bonjour, client CL-2048, dossier DOS-7788, j'ai une relance urgente pour un remboursement de facture en retard. Je n'ai toujours pas de retour sur mon dossier.";
-    form.attached_documents.value = "facture dentaire";
+    form.claim_text.value = profile.sample.claim_text;
+    form.attached_documents.value = profile.sample.attached_documents;
     autofillIdentifiers();
 });
 
+carrierProfileSelect.addEventListener("change", () => {
+    renderCarrierProfile();
+});
 claimText.addEventListener("input", autofillIdentifiers);
 csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
@@ -159,7 +283,17 @@ async function runBatchAnalysis() {
     batchOutput.textContent = "Traitement batch en cours...";
     resetBatchVisuals("Traitement...");
     const payload = {
-        items: csvRows.map(convertCsvRowToPayload),
+        items: csvRows.map((row) => {
+            const item = convertCsvRowToPayload(row);
+            return {
+                channel: item.channel,
+                customer_id: item.customer_id,
+                contract_id: item.contract_id,
+                provider: item.provider,
+                claim_text: item.claim_text,
+                attached_documents: item.attached_documents,
+            };
+        }),
     };
 
     try {
@@ -175,6 +309,11 @@ async function runBatchAnalysis() {
         if (!response.ok) {
             throw new Error(JSON.stringify(data, null, 2));
         }
+
+        data.items = data.items.map((item, index) => ({
+            ...item,
+            carrier_profile: convertCsvRowToPayload(csvRows[index] || {}).carrier_profile,
+        }));
 
         renderBatchSummary(data.summary);
         renderBatchTable(data.items);
@@ -319,6 +458,8 @@ function applySelectedCsvRow() {
 
 function applyCsvRow(row) {
     const payload = convertCsvRowToPayload(row);
+    carrierProfileSelect.value = resolveCarrierProfile(payload.carrier_profile);
+    renderCarrierProfile();
     form.channel.value = payload.channel;
     form.customer_id.value = payload.customer_id || "";
     form.contract_id.value = payload.contract_id || "";
@@ -343,6 +484,8 @@ function convertCsvRowToPayload(row) {
         channel: normalizeChannel(row.channel),
         customer_id: row.customer_id || row.client_id || null,
         contract_id: row.contract_id || row.case_id || row.dossier_id || row.claim_id || null,
+        carrier_profile:
+            row.carrier_profile || row.mutuelle || row.assureur || row.organisme || "generic",
         provider: row.provider || "mock",
         claim_text: row.claim_text || row.message || row.description || "",
         attached_documents: attachedDocuments,
@@ -427,6 +570,8 @@ function exportBatchResults() {
 
     const headers = [
         "source_file",
+        "carrier_profile",
+        "carrier_profile_label",
         "customer_id",
         "contract_id",
         "category",
@@ -449,8 +594,11 @@ function exportBatchResults() {
 
     const rows = lastBatchItems.map((item) => {
         const source = findSourceLabel(item);
+        const carrierProfile = CARRIER_PROFILES[resolveCarrierProfile(item.carrier_profile)];
         return [
             source,
+            item.carrier_profile || "",
+            carrierProfile.title,
             item.customer_id || "",
             item.contract_id || "",
             item.category || "",
@@ -529,6 +677,7 @@ function renderBatchTable(items) {
             const override = manualStatusOverrides[itemKey];
             const shownStatusValue = override?.value || item.business_status;
             const shownStatusLabel = override?.label || item.business_status_label;
+            const carrierProfile = CARRIER_PROFILES[resolveCarrierProfile(item.carrier_profile)];
 
             return `
                 <tr
@@ -540,6 +689,7 @@ function renderBatchTable(items) {
                     data-search="${escapeHtml(
                         [
                             findSourceLabel(item),
+                            carrierProfile.title,
                             item.customer_id || "",
                             item.contract_id || "",
                             item.category_label || "",
@@ -765,6 +915,7 @@ function renderCaseDetail(item) {
     const override = manualStatusOverrides[buildItemKey(item)];
     const shownStatusValue = override?.value || item.business_status;
     const shownStatusLabel = override?.label || item.business_status_label;
+    const carrierProfile = CARRIER_PROFILES[resolveCarrierProfile(item.carrier_profile)];
     const documents = item.documents_received?.length
         ? item.documents_received.join(", ")
         : "Aucune piece declaree";
@@ -777,6 +928,10 @@ function renderCaseDetail(item) {
             <div class="case-detail-item">
                 <span>Source</span>
                 <strong>${escapeHtml(findSourceLabel(item))}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Profil mutuelle</span>
+                <strong>${escapeHtml(carrierProfile.title)}</strong>
             </div>
             <div class="case-detail-item">
                 <span>Client</span>
@@ -820,6 +975,43 @@ function renderCaseDetail(item) {
             <pre class="output">${escapeHtml(item.claim_text || "Texte non disponible.")}</pre>
         </div>
     `;
+}
+
+function getCurrentCarrierProfile() {
+    return CARRIER_PROFILES[carrierProfileSelect.value] || CARRIER_PROFILES.generic;
+}
+
+function resolveCarrierProfile(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) {
+        return "generic";
+    }
+    if (normalized.includes("maaf")) {
+        return "maaf";
+    }
+    if (normalized.includes("macif")) {
+        return "macif";
+    }
+    if (normalized.includes("maif")) {
+        return "maif";
+    }
+    if (normalized.includes("niort") || normalized.includes("lab")) {
+        return "niort_lab";
+    }
+    return "generic";
+}
+
+function renderCarrierProfile() {
+    const profile = getCurrentCarrierProfile();
+    carrierBadge.textContent = profile.badge;
+    carrierTitle.textContent = profile.title;
+    carrierDescription.textContent = profile.description;
+    carrierFocusList.innerHTML = profile.focus.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+    carrierDocumentsList.innerHTML = profile.documents
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("");
+    carrierRulesList.innerHTML = profile.rules.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+    carrierProfileReadonly.value = profile.title;
 }
 
 function addLogEntry({ action, source, caseRef, detail }) {

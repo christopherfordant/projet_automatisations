@@ -1,4 +1,4 @@
-channel,customer_id,contract_id,claim_text,attached_documents,provider
-email,CL-2048,DOS-7788,"Bonjour, j'ai une relance urgente pour un remboursement de facture en retard.","facture dentaire",mock
-telephone,CL-3001,DOS-9912,"Bonjour, je souhaite un suivi sur un devis optique en attente.","devis optique",mock
-portail,,, "Bonjour, client CL-5555, dossier DOS-1234, je veux savoir ou en est mon remboursement.",,mock
+mutuelle,channel,customer_id,contract_id,claim_text,attached_documents,provider
+maaf,email,CL-2048,DOS-7788,"Bonjour, j'ai une relance urgente pour un remboursement de facture en retard.","facture dentaire",mock
+macif,telephone,CL-3001,DOS-9912,"Bonjour, je souhaite un suivi sur un devis optique en attente.","devis optique",mock
+maif,portail,,,"Bonjour, client CL-5555, dossier DOS-1234, je veux savoir ou en est mon remboursement.",,mock

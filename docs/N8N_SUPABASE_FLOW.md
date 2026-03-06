@@ -6,6 +6,7 @@
 - `n8n/workflows/claims_intake_batch_webhook.json`
 - `n8n/workflows/document_completeness_webhook.json`
 - `n8n/workflows/missing_info_followup_campaign.json`
+- `n8n/workflows/full_csv_claims_pipeline.json`
 - `supabase/schema/001_mutuelle_core.sql`
 - `supabase/schema/002_mutuelle_ingest_helpers.sql`
 
@@ -38,6 +39,14 @@ Le workflow `missing_info_followup_campaign.json`:
 2. lit les dossiers incomplets depuis la base locale;
 3. reutilise les messages client deja prepares;
 4. journalise l'action dans `operator_actions`.
+
+Le workflow `full_csv_claims_pipeline.json`:
+
+1. recoit un CSV brut en webhook;
+2. parse les lignes dans n8n;
+3. appelle `POST /automations/claims-intake/batch`;
+4. stocke le resultat complet via `save_claim_batch(...)`;
+5. renvoie le `batch_id` et le resume.
 
 ## URL cible cote n8n
 
@@ -90,6 +99,14 @@ Pour la campagne de relance:
 
 1. `Import from file`
 2. choisir `n8n/workflows/missing_info_followup_campaign.json`
+3. associer le credential `Postgres`
+4. sauvegarder le workflow
+5. l'activer si besoin
+
+Pour le pipeline CSV complet:
+
+1. `Import from file`
+2. choisir `n8n/workflows/full_csv_claims_pipeline.json`
 3. associer le credential `Postgres`
 4. sauvegarder le workflow
 5. l'activer si besoin
@@ -160,6 +177,30 @@ avec en parametres:
 1. `source_name`
 2. `imported_by`
 3. le JSON batch complet
+
+## Payload attendu pour le pipeline CSV complet
+
+```json
+{
+  "source_name": "batch_niort_2026_03_06.csv",
+  "imported_by": "n8n_csv_pipeline",
+  "provider": "mock",
+  "csv_content": "channel,customer_id,contract_id,claim_text,attached_documents\nemail,CL-2048,DOS-7788,\"Bonjour, relance remboursement\",\"facture dentaire\""
+}
+```
+
+## Reponse du pipeline CSV complet
+
+```json
+{
+  "batch_id": "uuid",
+  "source_name": "batch_niort_2026_03_06.csv",
+  "summary": {
+    "total_items": 1
+  },
+  "item_count": 1
+}
+```
 
 ## Stockage des controles documentaires
 

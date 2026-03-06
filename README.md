@@ -62,6 +62,7 @@ Workflows n8n ajoutes:
 - `claims intake` batch
 - `document completeness`
 - `missing info follow-up campaign`
+- `full csv claims pipeline`
 
 Helpers SQL ajoutes:
 

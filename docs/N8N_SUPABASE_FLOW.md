@@ -4,6 +4,7 @@
 
 - `n8n/workflows/claims_intake_webhook.json`
 - `n8n/workflows/claims_intake_batch_webhook.json`
+- `n8n/workflows/document_completeness_webhook.json`
 - `supabase/schema/001_mutuelle_core.sql`
 - `supabase/schema/002_mutuelle_ingest_helpers.sql`
 
@@ -22,6 +23,13 @@ Le workflow `claims_intake_batch_webhook.json`:
 2. appelle `POST /automations/claims-intake/batch`;
 3. prepare une charge exploitable pour stockage;
 4. renvoie le JSON batch au caller.
+
+Le workflow `document_completeness_webhook.json`:
+
+1. recoit un dossier documentaire en `POST`;
+2. appelle `POST /automations/document-completeness`;
+3. renvoie la checklist et le message client genere;
+4. peut ensuite etre branche vers `document_checks`.
 
 ## URL cible cote n8n
 
@@ -63,6 +71,13 @@ Pour le batch:
 3. sauvegarder le workflow
 4. l'activer si besoin
 
+Pour la completude documentaire:
+
+1. `Import from file`
+2. choisir `n8n/workflows/document_completeness_webhook.json`
+3. sauvegarder le workflow
+4. l'activer si besoin
+
 ## Schema Supabase local
 
 Le schema SQL `supabase/schema/001_mutuelle_core.sql` cree:
@@ -75,6 +90,8 @@ Le schema SQL `supabase/schema/001_mutuelle_core.sql` cree:
 Le schema `supabase/schema/002_mutuelle_ingest_helpers.sql` ajoute:
 
 - `save_claim_batch(...)`
+- `save_document_check(...)`
+- `log_operator_action(...)`
 
 ## Application du schema
 
@@ -127,6 +144,42 @@ avec en parametres:
 2. `imported_by`
 3. le JSON batch complet
 
+## Stockage des controles documentaires
+
+Apres le noeud HTTP `document-completeness`, ajouter un noeud `Postgres`:
+
+```sql
+select public.save_document_check(
+  $1::uuid,
+  $2::jsonb
+);
+```
+
+Parametres:
+
+1. `claim_case_id`
+2. le JSON complet retourne par `POST /automations/document-completeness`
+
+## Journalisation des actions operateur
+
+Pour tracer une action depuis n8n:
+
+```sql
+select public.log_operator_action(
+  $1::uuid,
+  $2,
+  $3,
+  $4
+);
+```
+
+Parametres:
+
+1. `claim_case_id`
+2. `action_type`
+3. `action_detail`
+4. `actor_name`
+
 ## Usage cible
 
 - `n8n` orchestre les entrees
@@ -136,6 +189,6 @@ avec en parametres:
 
 ## Prochaine suite logique
 
-1. ajouter un workflow n8n `document-completeness`
-2. brancher le noeud `Postgres` ou `Supabase` apres le batch
-3. ajouter une ecriture automatique des `operator_actions`
+1. brancher le noeud `Postgres` ou `Supabase` apres le batch
+2. brancher `document-completeness` sur `save_document_check(...)`
+3. faire un workflow n8n de relance client en masse depuis les dossiers incomplets

@@ -60,11 +60,14 @@ Workflows n8n ajoutes:
 
 - `claims intake` unitaire
 - `claims intake` batch
+- `document completeness`
 
 Helpers SQL ajoutes:
 
 - schema coeur `claim_batches`, `claim_cases`, `operator_actions`, `document_checks`
 - fonction `save_claim_batch(...)` pour inserer un batch complet depuis n8n
+- fonction `save_document_check(...)` pour stocker une verification documentaire
+- fonction `log_operator_action(...)` pour tracer les actions operateur
 
 ## Demarrage local
 

@@ -86,3 +86,81 @@ begin
     return v_batch_id;
 end;
 $$;
+
+
+create or replace function public.save_document_check(
+    p_claim_case_id uuid,
+    p_payload jsonb
+)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+    v_document_check_id uuid;
+begin
+    insert into public.document_checks (
+        claim_case_id,
+        document_type,
+        document_type_label,
+        completion_ratio,
+        readiness_status,
+        readiness_status_label,
+        message_tone,
+        output_channel,
+        missing_required_labels,
+        client_request_subject,
+        client_request_message,
+        operator_summary
+    )
+    values (
+        p_claim_case_id,
+        nullif(p_payload->>'document_type', ''),
+        nullif(p_payload->>'document_type_label', ''),
+        coalesce(nullif(p_payload->>'completion_ratio', '')::integer, 0),
+        nullif(p_payload->>'readiness_status', ''),
+        nullif(p_payload->>'readiness_status_label', ''),
+        nullif(p_payload->>'message_tone', ''),
+        nullif(p_payload->>'output_channel', ''),
+        coalesce(p_payload->'missing_required_labels', '[]'::jsonb),
+        nullif(p_payload->>'client_request_subject', ''),
+        nullif(p_payload->>'client_request_message', ''),
+        nullif(p_payload->>'operator_summary', '')
+    )
+    returning id into v_document_check_id;
+
+    return v_document_check_id;
+end;
+$$;
+
+
+create or replace function public.log_operator_action(
+    p_claim_case_id uuid,
+    p_action_type text,
+    p_action_detail text,
+    p_actor_name text
+)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+    v_action_id uuid;
+begin
+    insert into public.operator_actions (
+        claim_case_id,
+        action_type,
+        action_detail,
+        actor_name
+    )
+    values (
+        p_claim_case_id,
+        p_action_type,
+        p_action_detail,
+        p_actor_name
+    )
+    returning id into v_action_id;
+
+    return v_action_id;
+end;
+$$;

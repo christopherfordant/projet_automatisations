@@ -401,6 +401,14 @@ button:disabled {
     vertical-align: top;
 }
 
+.status-select {
+    min-width: 170px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #fff;
+}
+
 .batch-table th {
     background: #f6efe2;
     font-weight: 700;
@@ -450,6 +458,12 @@ button:disabled {
 .badge.ready_for_priority_queue {
     background: #e7f3f1;
     color: #155e59;
+}
+
+.badge.validated,
+.badge.processed {
+    background: #ddeff4;
+    color: #0f4c5c;
 }
 
 .batch-details {

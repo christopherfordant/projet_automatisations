@@ -24,6 +24,7 @@ const csvDropzone = document.getElementById("csv-dropzone");
 const csvFileList = document.getElementById("csv-file-list");
 let csvRows = [];
 let lastBatchItems = [];
+let manualStatusOverrides = {};
 
 fillExample.addEventListener("click", () => {
     form.channel.value = "email";
@@ -46,6 +47,7 @@ filterCategory.addEventListener("change", applyBatchFilters);
 filterStatus.addEventListener("change", applyBatchFilters);
 filterSearch.addEventListener("input", applyBatchFilters);
 filterMissingOnly.addEventListener("change", applyBatchFilters);
+batchTableBody.addEventListener("change", handleStatusOverrideChange);
 csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
@@ -408,6 +410,8 @@ function exportBatchResults() {
         "priority_label",
         "business_status",
         "business_status_label",
+        "manual_business_status",
+        "manual_business_status_label",
         "recommended_next_action",
         "recommended_next_action_label",
         "missing_information",
@@ -430,6 +434,8 @@ function exportBatchResults() {
             item.priority_label || "",
             item.business_status || "",
             item.business_status_label || "",
+            item.manual_business_status || "",
+            item.manual_business_status_label || "",
             item.recommended_next_action || "",
             item.recommended_next_action_label || "",
             (item.missing_information || []).join(" | "),
@@ -485,7 +491,7 @@ function renderBatchSummary(summaryData) {
 
 function renderBatchTable(items) {
     if (!items || items.length === 0) {
-        batchTableBody.innerHTML = '<tr><td colspan="8">Aucun resultat disponible.</td></tr>';
+        batchTableBody.innerHTML = '<tr><td colspan="9">Aucun resultat disponible.</td></tr>';
         return;
     }
 
@@ -494,20 +500,25 @@ function renderBatchTable(items) {
             const missing = item.missing_information_labels.length
                 ? item.missing_information_labels.join(", ")
                 : "Aucune";
+            const itemKey = buildItemKey(item);
+            const override = manualStatusOverrides[itemKey];
+            const shownStatusValue = override?.value || item.business_status;
+            const shownStatusLabel = override?.label || item.business_status_label;
 
             return `
                 <tr
                     data-priority="${escapeHtml(item.priority)}"
                     data-category="${escapeHtml(item.category_label)}"
-                    data-status="${escapeHtml(item.business_status_label)}"
+                    data-status="${escapeHtml(shownStatusLabel)}"
                     data-missing="${item.missing_information_labels.length > 0 ? "yes" : "no"}"
+                    data-item-key="${escapeHtml(itemKey)}"
                     data-search="${escapeHtml(
                         [
                             findSourceLabel(item),
                             item.customer_id || "",
                             item.contract_id || "",
                             item.category_label || "",
-                            item.business_status_label || "",
+                            shownStatusLabel || "",
                             item.recommended_next_action_label || "",
                         ].join(" ").toLowerCase(),
                     )}"
@@ -517,7 +528,12 @@ function renderBatchTable(items) {
                     <td>${escapeHtml(item.contract_id || "-")}</td>
                     <td>${escapeHtml(item.category_label)}</td>
                     <td><span class="badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority_label)}</span></td>
-                    <td><span class="badge ${escapeHtml(item.business_status)}">${escapeHtml(item.business_status_label)}</span></td>
+                    <td><span class="badge ${escapeHtml(shownStatusValue)}">${escapeHtml(shownStatusLabel)}</span></td>
+                    <td>
+                        <select class="status-select" data-item-key="${escapeHtml(itemKey)}">
+                            ${renderStatusOptions(item, override)}
+                        </select>
+                    </td>
                     <td>${escapeHtml(item.recommended_next_action_label)}</td>
                     <td>${escapeHtml(missing)}</td>
                 </tr>
@@ -540,6 +556,7 @@ function findSourceLabel(item) {
 
 function resetBatchVisuals(status = "-") {
     lastBatchItems = [];
+    manualStatusOverrides = {};
     exportBatchButton.disabled = true;
     filterPriority.value = "";
     filterCategory.innerHTML = '<option value="">Toutes</option>';
@@ -561,7 +578,7 @@ function resetBatchVisuals(status = "-") {
             <strong>${escapeHtml(status)}</strong>
         </div>
     `;
-    batchTableBody.innerHTML = '<tr><td colspan="8">Aucun batch lance.</td></tr>';
+    batchTableBody.innerHTML = '<tr><td colspan="9">Aucun batch lance.</td></tr>';
 }
 
 function hydrateCategoryFilter(items) {
@@ -573,7 +590,13 @@ function hydrateCategoryFilter(items) {
 }
 
 function hydrateStatusFilter(items) {
-    const statuses = [...new Set(items.map((item) => item.business_status_label))].sort();
+    const statuses = [
+        ...new Set([
+            ...items.map((item) => item.business_status_label),
+            "Valide",
+            "Traite",
+        ]),
+    ].sort();
     filterStatus.innerHTML = '<option value="">Tous</option>' +
         statuses
             .map((status) => `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`)
@@ -614,4 +637,57 @@ function applyBatchFilters() {
     } else {
         batchFilterStatus.textContent = `${visibleCount} dossier(s) affiché(s) apres filtrage.`;
     }
+}
+
+function handleStatusOverrideChange(event) {
+    const select = event.target.closest(".status-select");
+    if (!select) {
+        return;
+    }
+
+    const itemKey = select.dataset.itemKey;
+    const value = select.value;
+    const label = value ? select.options[select.selectedIndex].text : "";
+
+    if (!value) {
+        delete manualStatusOverrides[itemKey];
+    } else {
+        manualStatusOverrides[itemKey] = { value, label };
+    }
+
+    lastBatchItems = lastBatchItems.map((item) => {
+        if (buildItemKey(item) !== itemKey) {
+            return item;
+        }
+        return {
+            ...item,
+            manual_business_status: value,
+            manual_business_status_label: label,
+        };
+    });
+
+    renderBatchTable(lastBatchItems);
+    applyBatchFilters();
+}
+
+function renderStatusOptions(item, override) {
+    const current = override?.value || "";
+    return [
+        `<option value="">Automatique (${escapeHtml(item.business_status_label)})</option>`,
+        `<option value="blocked" ${current === "blocked" ? "selected" : ""}>Bloque</option>`,
+        `<option value="to_review" ${current === "to_review" ? "selected" : ""}>A revoir</option>`,
+        `<option value="ready_to_route" ${current === "ready_to_route" ? "selected" : ""}>Pret a router</option>`,
+        `<option value="ready_for_priority_queue" ${current === "ready_for_priority_queue" ? "selected" : ""}>Pret pour file prioritaire</option>`,
+        `<option value="validated" ${current === "validated" ? "selected" : ""}>Valide</option>`,
+        `<option value="processed" ${current === "processed" ? "selected" : ""}>Traite</option>`,
+    ].join("");
+}
+
+function buildItemKey(item) {
+    return [
+        findSourceLabel(item),
+        item.customer_id || "",
+        item.contract_id || "",
+        item.claim_text || "",
+    ].join("::");
 }

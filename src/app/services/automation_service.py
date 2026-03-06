@@ -1,3 +1,5 @@
+import re
+
 from app.connectors.mutuelle_catalog import CONNECTOR_CATALOG
 from app.core.config import get_settings
 from app.providers.base import PromptRequest
@@ -36,10 +38,17 @@ class AutomationService:
         settings = get_settings()
         provider = get_provider(payload.provider)
         normalized_text = payload.claim_text.lower()
+        resolved_customer_id = payload.customer_id or self._extract_customer_id(payload.claim_text)
+        resolved_contract_id = payload.contract_id or self._extract_contract_id(payload.claim_text)
 
         category = self._classify_claim_category(normalized_text)
         priority = self._classify_priority(normalized_text)
-        missing_information = self._collect_missing_information(payload, normalized_text)
+        missing_information = self._collect_missing_information(
+            resolved_customer_id,
+            resolved_contract_id,
+            payload.attached_documents,
+            normalized_text,
+        )
         next_action = self._recommend_next_action(category, priority, missing_information)
 
         prompt = PromptRequest(
@@ -49,8 +58,8 @@ class AutomationService:
             ),
             user_prompt=(
                 f"Canal: {payload.channel}\n"
-                f"Client: {payload.customer_id or 'inconnu'}\n"
-                f"Contrat: {payload.contract_id or 'inconnu'}\n"
+                f"Client: {resolved_customer_id or 'inconnu'}\n"
+                f"Contrat: {resolved_contract_id or 'inconnu'}\n"
                 f"Categorie calculee: {category}\n"
                 f"Priorite calculee: {priority}\n"
                 f"Texte de la demande:\n{payload.claim_text}"
@@ -61,6 +70,8 @@ class AutomationService:
         ai_result = await provider.generate(prompt)
         return {
             "module": "claims_intake",
+            "customer_id": resolved_customer_id,
+            "contract_id": resolved_contract_id,
             "category": category,
             "priority": priority,
             "missing_information": missing_information,
@@ -113,18 +124,39 @@ class AutomationService:
 
     @staticmethod
     def _collect_missing_information(
-        payload: ClaimIntakeRequest, normalized_text: str
+        customer_id: str | None,
+        contract_id: str | None,
+        attached_documents: list[str],
+        normalized_text: str,
     ) -> list[str]:
         missing: list[str] = []
-        if not payload.customer_id:
+        if not customer_id:
             missing.append("customer_id")
-        if not payload.contract_id:
+        if not contract_id:
             missing.append("contract_id")
-        if "devis" in normalized_text and not payload.attached_documents:
+        if "devis" in normalized_text and not attached_documents:
             missing.append("supporting_quote")
-        if "facture" in normalized_text and not payload.attached_documents:
+        if "facture" in normalized_text and not attached_documents:
             missing.append("invoice_copy")
         return missing
+
+    @staticmethod
+    def _extract_customer_id(claim_text: str) -> str | None:
+        match = re.search(
+            r"\b(?:client|adherent|adh[ée]rent|assur[ée]|id client)\s*[:#-]?\s*([A-Z0-9-]{4,})",
+            claim_text,
+            flags=re.IGNORECASE,
+        )
+        return match.group(1).upper() if match else None
+
+    @staticmethod
+    def _extract_contract_id(claim_text: str) -> str | None:
+        match = re.search(
+            r"\b(?:dossier|num[ée]ro dossier|ref(?:erence)? dossier|sinistre)\s*[:#-]?\s*([A-Z0-9-]{4,})",
+            claim_text,
+            flags=re.IGNORECASE,
+        )
+        return match.group(1).upper() if match else None
 
     @staticmethod
     def _recommend_next_action(category: str, priority: str, missing_information: list[str]) -> str:

@@ -4,6 +4,7 @@ const summary = document.getElementById("summary");
 const missingList = document.getElementById("missing-list");
 const operatorSummary = document.getElementById("operator-summary");
 const rawOutput = document.getElementById("raw-output");
+const claimText = form.claim_text;
 
 fillExample.addEventListener("click", () => {
     form.channel.value = "email";
@@ -11,9 +12,12 @@ fillExample.addEventListener("click", () => {
     form.contract_id.value = "";
     form.provider.value = "mock";
     form.claim_text.value =
-        "Bonjour, j'ai une relance urgente pour un remboursement de facture en retard. Je n'ai toujours pas de retour sur mon dossier.";
+        "Bonjour, client CL-2048, dossier DOS-7788, j'ai une relance urgente pour un remboursement de facture en retard. Je n'ai toujours pas de retour sur mon dossier.";
     form.attached_documents.value = "facture dentaire";
+    autofillIdentifiers();
 });
+
+claimText.addEventListener("input", autofillIdentifiers);
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -106,3 +110,20 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
+function autofillIdentifiers() {
+    const text = claimText.value;
+    const customerMatch = text.match(
+        /\b(?:client|adherent|adh[ée]rent|assur[ée]|id client)\s*[:#-]?\s*([A-Z0-9-]{4,})/i,
+    );
+    const contractMatch = text.match(
+        /\b(?:dossier|num[ée]ro dossier|ref(?:erence)? dossier|sinistre)\s*[:#-]?\s*([A-Z0-9-]{4,})/i,
+    );
+
+    if (!form.customer_id.value && customerMatch) {
+        form.customer_id.value = customerMatch[1].toUpperCase();
+    }
+
+    if (!form.contract_id.value && contractMatch) {
+        form.contract_id.value = contractMatch[1].toUpperCase();
+    }
+}

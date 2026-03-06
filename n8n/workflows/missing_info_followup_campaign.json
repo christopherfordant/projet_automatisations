@@ -1,0 +1,126 @@
+{
+  "name": "Mutuelle Missing Info Follow-up Campaign",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "Schedule_Trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id, customer_id, contract_id, category_label, client_request_subject, client_request_message\nfrom public.claim_cases\nwhere jsonb_array_length(coalesce(missing_information, '[]'::jsonb)) > 0\n  and coalesce(client_request_message, '') <> ''\norder by created_at desc\nlimit 100;"
+      },
+      "id": "Select_Missing_Cases",
+      "name": "Select Missing Cases",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -240,
+        160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "replace-postgres-credential-id",
+          "name": "Supabase Local Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map((item) => ({ json: { ...item.json, action_type: 'client_followup_prepared', action_detail: `Relance preparee pour ${item.json.contract_id || item.json.customer_id || 'dossier sans reference'}`, actor_name: 'n8n_followup_campaign' } }));"
+      },
+      "id": "Prepare_Followup_Log",
+      "name": "Prepare Follow-up Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        10,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select public.log_operator_action(\n  $1::uuid,\n  $2,\n  $3,\n  $4\n);",
+        "additionalFields": {
+          "queryParams": "={{ [$json.id, $json.action_type, $json.action_detail, $json.actor_name] }}"
+        }
+      },
+      "id": "Log_Followup_Action",
+      "name": "Log Follow-up Action",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        280,
+        160
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "replace-postgres-credential-id",
+          "name": "Supabase Local Postgres"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Select Missing Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Missing Cases": {
+      "main": [
+        [
+          {
+            "node": "Prepare Follow-up Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Follow-up Log": {
+      "main": [
+        [
+          {
+            "node": "Log Follow-up Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "188d31f4-f6ea-4b65-9bc3-missing-followup-campaign",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "id": "mutuelleMissingInfoFollowupCampaign"
+}

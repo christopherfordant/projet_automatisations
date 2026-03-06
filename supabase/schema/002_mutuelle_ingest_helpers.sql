@@ -164,3 +164,19 @@ begin
     return v_action_id;
 end;
 $$;
+
+
+create or replace view public.claim_cases_ready_for_followup as
+select
+    id,
+    customer_id,
+    contract_id,
+    category_label,
+    business_status_label,
+    attention_level_label,
+    client_request_subject,
+    client_request_message,
+    created_at
+from public.claim_cases
+where jsonb_array_length(coalesce(missing_information, '[]'::jsonb)) > 0
+  and coalesce(client_request_message, '') <> '';

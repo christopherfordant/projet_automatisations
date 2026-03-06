@@ -5,6 +5,7 @@
 - `n8n/workflows/claims_intake_webhook.json`
 - `n8n/workflows/claims_intake_batch_webhook.json`
 - `n8n/workflows/document_completeness_webhook.json`
+- `n8n/workflows/missing_info_followup_campaign.json`
 - `supabase/schema/001_mutuelle_core.sql`
 - `supabase/schema/002_mutuelle_ingest_helpers.sql`
 
@@ -30,6 +31,13 @@ Le workflow `document_completeness_webhook.json`:
 2. appelle `POST /automations/document-completeness`;
 3. renvoie la checklist et le message client genere;
 4. peut ensuite etre branche vers `document_checks`.
+
+Le workflow `missing_info_followup_campaign.json`:
+
+1. declenche une campagne planifiee;
+2. lit les dossiers incomplets depuis la base locale;
+3. reutilise les messages client deja prepares;
+4. journalise l'action dans `operator_actions`.
 
 ## URL cible cote n8n
 
@@ -78,6 +86,14 @@ Pour la completude documentaire:
 3. sauvegarder le workflow
 4. l'activer si besoin
 
+Pour la campagne de relance:
+
+1. `Import from file`
+2. choisir `n8n/workflows/missing_info_followup_campaign.json`
+3. associer le credential `Postgres`
+4. sauvegarder le workflow
+5. l'activer si besoin
+
 ## Schema Supabase local
 
 Le schema SQL `supabase/schema/001_mutuelle_core.sql` cree:
@@ -92,6 +108,7 @@ Le schema `supabase/schema/002_mutuelle_ingest_helpers.sql` ajoute:
 - `save_claim_batch(...)`
 - `save_document_check(...)`
 - `log_operator_action(...)`
+- vue `claim_cases_ready_for_followup`
 
 ## Application du schema
 
@@ -180,6 +197,20 @@ Parametres:
 3. `action_detail`
 4. `actor_name`
 
+## Selection des dossiers a relancer
+
+La vue:
+
+```sql
+select * from public.claim_cases_ready_for_followup;
+```
+
+retourne les dossiers avec:
+
+- informations manquantes
+- message client deja genere
+- references utiles pour une campagne de relance
+
 ## Usage cible
 
 - `n8n` orchestre les entrees
@@ -191,4 +222,4 @@ Parametres:
 
 1. brancher le noeud `Postgres` ou `Supabase` apres le batch
 2. brancher `document-completeness` sur `save_document_check(...)`
-3. faire un workflow n8n de relance client en masse depuis les dossiers incomplets
+3. enrichir la campagne de relance avec envoi reel email ou sms

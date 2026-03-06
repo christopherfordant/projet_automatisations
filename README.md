@@ -61,6 +61,7 @@ Workflows n8n ajoutes:
 - `claims intake` unitaire
 - `claims intake` batch
 - `document completeness`
+- `missing info follow-up campaign`
 
 Helpers SQL ajoutes:
 
@@ -68,6 +69,7 @@ Helpers SQL ajoutes:
 - fonction `save_claim_batch(...)` pour inserer un batch complet depuis n8n
 - fonction `save_document_check(...)` pour stocker une verification documentaire
 - fonction `log_operator_action(...)` pour tracer les actions operateur
+- vue `claim_cases_ready_for_followup` pour les campagnes de relance
 
 ## Demarrage local
 

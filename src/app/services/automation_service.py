@@ -49,6 +49,20 @@ class AutomationService:
         "ready_for_priority_queue": "Pret pour file prioritaire",
     }
 
+    FRICTION_FLAG_LABELS = {
+        "missing_information": "Dossier incomplet",
+        "relance_detected": "Relance detectee",
+        "complaint_risk": "Risque de reclamation",
+        "urgent_medical_context": "Contexte medical urgent",
+        "duplicate_case": "Possible doublon batch",
+    }
+
+    ATTENTION_LEVEL_LABELS = {
+        "critical": "Critique",
+        "elevated": "Elevee",
+        "standard": "Standard",
+    }
+
     async def run_intake(self, payload: AutomationRequest) -> dict[str, object]:
         settings = get_settings()
         provider = get_provider(payload.provider)
@@ -87,6 +101,13 @@ class AutomationService:
             normalized_text,
         )
         next_action = self._recommend_next_action(category, priority, missing_information)
+        friction_flags = self._derive_friction_flags(
+            category,
+            priority,
+            missing_information,
+            normalized_text,
+        )
+        attention_score = self._compute_attention_score(priority, missing_information, friction_flags)
 
         prompt = PromptRequest(
             system_prompt=(
@@ -113,6 +134,8 @@ class AutomationService:
             "category": category,
             "priority": priority,
             "missing_information": missing_information,
+            "friction_flags": friction_flags,
+            "attention_score": attention_score,
             "recommended_next_action": next_action,
             "documents_received": payload.attached_documents,
             "operator_summary": ai_result["content"],
@@ -128,15 +151,20 @@ class AutomationService:
         for item in payload.items:
             results.append(await self.run_claims_intake(item))
 
+        self._annotate_batch_friction(results)
+
         summary = {
             "total_items": len(results),
             "high_priority": sum(1 for item in results if item["priority"] == "high"),
+            "critical_attention": sum(1 for item in results if item["attention_level"] == "critical"),
             "missing_information_cases": sum(
                 1 for item in results if item["missing_information"]
             ),
+            "duplicate_suspicions": sum(1 for item in results if item["duplicate_suspected"]),
             "categories": self._count_by_key(results, "category_label"),
             "recommended_actions": self._count_by_key(results, "recommended_next_action_label"),
             "business_statuses": self._count_by_key(results, "business_status_label"),
+            "attention_levels": self._count_by_key(results, "attention_level_label"),
         }
 
         return {
@@ -238,9 +266,11 @@ class AutomationService:
         missing_information = [
             cls.MISSING_INFO_LABELS.get(item, item) for item in result["missing_information"]
         ]
+        friction_flags = [cls.FRICTION_FLAG_LABELS.get(item, item) for item in result["friction_flags"]]
         result["category_label"] = cls.CATEGORY_LABELS.get(result["category"], result["category"])
         result["priority_label"] = cls.PRIORITY_LABELS.get(result["priority"], result["priority"])
         result["missing_information_labels"] = missing_information
+        result["friction_flag_labels"] = friction_flags
         result["recommended_next_action_label"] = cls.ACTION_LABELS.get(
             result["recommended_next_action"],
             result["recommended_next_action"],
@@ -254,6 +284,13 @@ class AutomationService:
             result["business_status"],
             result["business_status"],
         )
+        result["attention_level"] = cls._derive_attention_level(result["attention_score"])
+        result["attention_level_label"] = cls.ATTENTION_LEVEL_LABELS.get(
+            result["attention_level"],
+            result["attention_level"],
+        )
+        result["duplicate_suspected"] = False
+        result["duplicate_cluster_size"] = 1
         return result
 
     @staticmethod
@@ -269,6 +306,94 @@ class AutomationService:
         if priority == "high":
             return "ready_for_priority_queue"
         return "ready_to_route"
+
+    @staticmethod
+    def _derive_friction_flags(
+        category: str,
+        priority: str,
+        missing_information: list[str],
+        normalized_text: str,
+    ) -> list[str]:
+        flags: list[str] = []
+        if missing_information:
+            flags.append("missing_information")
+        if any(
+            token in normalized_text
+            for token in ("relance", "toujours pas", "sans retour", "aucune reponse", "deuxieme")
+        ):
+            flags.append("relance_detected")
+        if category == "complaint" or any(
+            token in normalized_text for token in ("insatisf", "plainte", "litige", "mediat")
+        ):
+            flags.append("complaint_risk")
+        if priority == "high" and any(
+            token in normalized_text for token in ("hospital", "chirurg", "prise en charge", "urgence")
+        ):
+            flags.append("urgent_medical_context")
+        return flags
+
+    @staticmethod
+    def _compute_attention_score(
+        priority: str,
+        missing_information: list[str],
+        friction_flags: list[str],
+    ) -> int:
+        score = 20
+        if priority == "high":
+            score += 25
+        elif priority == "medium":
+            score += 10
+        if missing_information:
+            score += 30
+        if "relance_detected" in friction_flags:
+            score += 15
+        if "complaint_risk" in friction_flags:
+            score += 20
+        if "urgent_medical_context" in friction_flags:
+            score += 20
+        return min(score, 100)
+
+    @staticmethod
+    def _derive_attention_level(score: int) -> str:
+        if score >= 80:
+            return "critical"
+        if score >= 45:
+            return "elevated"
+        return "standard"
+
+    @classmethod
+    def _annotate_batch_friction(cls, items: list[dict[str, object]]) -> None:
+        duplicate_groups: dict[str, list[dict[str, object]]] = {}
+        for item in items:
+            key = cls._build_duplicate_key(item)
+            duplicate_groups.setdefault(key, []).append(item)
+
+        for group in duplicate_groups.values():
+            if len(group) < 2:
+                continue
+            for item in group:
+                if "duplicate_case" not in item["friction_flags"]:
+                    item["friction_flags"].append("duplicate_case")
+                item["duplicate_suspected"] = True
+                item["duplicate_cluster_size"] = len(group)
+                item["attention_score"] = min(int(item["attention_score"]) + 15, 100)
+                item["attention_level"] = cls._derive_attention_level(int(item["attention_score"]))
+                item["attention_level_label"] = cls.ATTENTION_LEVEL_LABELS[item["attention_level"]]
+                item["friction_flag_labels"] = [
+                    cls.FRICTION_FLAG_LABELS.get(flag, flag) for flag in item["friction_flags"]
+                ]
+
+    @staticmethod
+    def _build_duplicate_key(item: dict[str, object]) -> str:
+        contract_id = str(item.get("contract_id") or "").strip().lower()
+        customer_id = str(item.get("customer_id") or "").strip().lower()
+        category = str(item.get("category") or "").strip().lower()
+        claim_text = str(item.get("claim_text") or "").strip().lower()
+        if contract_id:
+            return f"contract::{contract_id}::{category}"
+        if customer_id:
+            return f"customer::{customer_id}::{category}"
+        return f"text::{category}::{claim_text[:80]}"
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

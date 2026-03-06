@@ -220,6 +220,17 @@
                     <li>Aucune execution pour l'instant.</li>
                 </ul>
             </article>
+
+            <article class="card">
+                <h2>Friction operationnelle</h2>
+                <dl id="attention-summary" class="summary">
+                    <div><dt>Attention</dt><dd>-</dd></div>
+                    <div><dt>Score</dt><dd>-</dd></div>
+                </dl>
+                <ul id="friction-list" class="list">
+                    <li>Aucune execution pour l'instant.</li>
+                </ul>
+            </article>
         </section>
 
         <section class="card">
@@ -263,6 +274,15 @@
                         </select>
                     </label>
                     <label>
+                        Attention
+                        <select id="filter-attention">
+                            <option value="">Toutes</option>
+                            <option value="critical">Critique</option>
+                            <option value="elevated">Elevee</option>
+                            <option value="standard">Standard</option>
+                        </select>
+                    </label>
+                    <label>
                         Recherche
                         <input type="text" id="filter-search" placeholder="Client, dossier, source">
                     </label>
@@ -288,6 +308,14 @@
                     <span>Incomplets</span>
                     <strong>-</strong>
                 </div>
+                <div class="metric">
+                    <span>Attention critique</span>
+                    <strong>-</strong>
+                </div>
+                <div class="metric">
+                    <span>Doublons suspects</span>
+                    <strong>-</strong>
+                </div>
             </div>
             <div class="table-wrap">
                 <table class="batch-table">
@@ -298,15 +326,17 @@
                             <th>Dossier</th>
                             <th>Categorie</th>
                             <th>Priorite</th>
+                            <th>Attention</th>
                             <th>Statut metier</th>
                             <th>Override</th>
                             <th>Action</th>
+                            <th>Friction</th>
                             <th>Informations manquantes</th>
                         </tr>
                     </thead>
                     <tbody id="batch-table-body">
                         <tr>
-                            <td colspan="9">Aucun batch lance.</td>
+                            <td colspan="11">Aucun batch lance.</td>
                         </tr>
                     </tbody>
                 </table>

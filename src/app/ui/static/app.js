@@ -9,7 +9,9 @@ const carrierDocumentsList = document.getElementById("carrier-documents-list");
 const carrierRulesList = document.getElementById("carrier-rules-list");
 const fillExample = document.getElementById("fill-example");
 const summary = document.getElementById("summary");
+const attentionSummary = document.getElementById("attention-summary");
 const missingList = document.getElementById("missing-list");
+const frictionList = document.getElementById("friction-list");
 const operatorSummary = document.getElementById("operator-summary");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
@@ -20,6 +22,7 @@ const exportBatchButton = document.getElementById("export-batch");
 const filterPriority = document.getElementById("filter-priority");
 const filterCategory = document.getElementById("filter-category");
 const filterStatus = document.getElementById("filter-status");
+const filterAttention = document.getElementById("filter-attention");
 const filterSearch = document.getElementById("filter-search");
 const filterMissingOnly = document.getElementById("filter-missing-only");
 const batchFilterStatus = document.getElementById("batch-filter-status");
@@ -181,6 +184,7 @@ exportBatchButton.addEventListener("click", exportBatchResults);
 filterPriority.addEventListener("change", applyBatchFilters);
 filterCategory.addEventListener("change", applyBatchFilters);
 filterStatus.addEventListener("change", applyBatchFilters);
+filterAttention.addEventListener("change", applyBatchFilters);
 filterSearch.addEventListener("input", applyBatchFilters);
 filterMissingOnly.addEventListener("change", applyBatchFilters);
 batchTableBody.addEventListener("change", handleStatusOverrideChange);
@@ -212,6 +216,11 @@ form.addEventListener("submit", async (event) => {
         priority: "-",
         action: "-",
     });
+    renderAttention({
+        level: "-",
+        score: "-",
+        flags: ["Analyse en cours..."],
+    });
     missingList.innerHTML = "<li>Analyse en cours...</li>";
     operatorSummary.textContent = "Chargement...";
     rawOutput.textContent = "Chargement...";
@@ -237,6 +246,11 @@ form.addEventListener("submit", async (event) => {
             priority: data.priority_label,
             action: data.recommended_next_action_label,
         });
+        renderAttention({
+            level: data.attention_level_label,
+            score: data.attention_score,
+            flags: data.friction_flag_labels,
+        });
         renderMissing(data.missing_information_labels);
         operatorSummary.textContent = data.operator_summary;
         rawOutput.textContent = JSON.stringify(data, null, 2);
@@ -246,6 +260,11 @@ form.addEventListener("submit", async (event) => {
             category: "-",
             priority: "-",
             action: "-",
+        });
+        renderAttention({
+            level: "-",
+            score: "-",
+            flags: ["La requete a echoue."],
         });
         missingList.innerHTML = "<li>La requete a echoue.</li>";
         operatorSummary.textContent = "Verifier que l'API tourne et que le provider choisi est disponible.";
@@ -578,6 +597,9 @@ function exportBatchResults() {
         "category_label",
         "priority",
         "priority_label",
+        "attention_score",
+        "attention_level",
+        "attention_level_label",
         "business_status",
         "business_status_label",
         "manual_business_status",
@@ -586,6 +608,10 @@ function exportBatchResults() {
         "recommended_next_action_label",
         "missing_information",
         "missing_information_labels",
+        "friction_flags",
+        "friction_flag_labels",
+        "duplicate_suspected",
+        "duplicate_cluster_size",
         "documents_received",
         "operator_summary",
         "ai_provider",
@@ -605,6 +631,9 @@ function exportBatchResults() {
             item.category_label || "",
             item.priority || "",
             item.priority_label || "",
+            item.attention_score || "",
+            item.attention_level || "",
+            item.attention_level_label || "",
             item.business_status || "",
             item.business_status_label || "",
             item.manual_business_status || "",
@@ -613,6 +642,10 @@ function exportBatchResults() {
             item.recommended_next_action_label || "",
             (item.missing_information || []).join(" | "),
             (item.missing_information_labels || []).join(" | "),
+            (item.friction_flags || []).join(" | "),
+            (item.friction_flag_labels || []).join(" | "),
+            item.duplicate_suspected ? "yes" : "no",
+            item.duplicate_cluster_size || "",
             (item.documents_received || []).join(" | "),
             item.operator_summary || "",
             item.ai_provider || "",
@@ -659,12 +692,20 @@ function renderBatchSummary(summaryData) {
             <span>Incomplets</span>
             <strong>${escapeHtml(summaryData.missing_information_cases)}</strong>
         </div>
+        <div class="metric">
+            <span>Attention critique</span>
+            <strong>${escapeHtml(summaryData.critical_attention)}</strong>
+        </div>
+        <div class="metric">
+            <span>Doublons suspects</span>
+            <strong>${escapeHtml(summaryData.duplicate_suspicions)}</strong>
+        </div>
     `;
 }
 
 function renderBatchTable(items) {
     if (!items || items.length === 0) {
-        batchTableBody.innerHTML = '<tr><td colspan="9">Aucun resultat disponible.</td></tr>';
+        batchTableBody.innerHTML = '<tr><td colspan="11">Aucun resultat disponible.</td></tr>';
         return;
     }
 
@@ -678,12 +719,16 @@ function renderBatchTable(items) {
             const shownStatusValue = override?.value || item.business_status;
             const shownStatusLabel = override?.label || item.business_status_label;
             const carrierProfile = CARRIER_PROFILES[resolveCarrierProfile(item.carrier_profile)];
+            const friction = item.friction_flag_labels.length
+                ? item.friction_flag_labels.join(", ")
+                : "Aucune";
 
             return `
                 <tr
                     data-priority="${escapeHtml(item.priority)}"
                     data-category="${escapeHtml(item.category_label)}"
                     data-status="${escapeHtml(shownStatusLabel)}"
+                    data-attention="${escapeHtml(item.attention_level)}"
                     data-missing="${item.missing_information_labels.length > 0 ? "yes" : "no"}"
                     data-item-key="${escapeHtml(itemKey)}"
                     data-search="${escapeHtml(
@@ -693,6 +738,8 @@ function renderBatchTable(items) {
                             item.customer_id || "",
                             item.contract_id || "",
                             item.category_label || "",
+                            item.attention_level_label || "",
+                            friction,
                             shownStatusLabel || "",
                             item.recommended_next_action_label || "",
                         ].join(" ").toLowerCase(),
@@ -703,6 +750,7 @@ function renderBatchTable(items) {
                     <td>${escapeHtml(item.contract_id || "-")}</td>
                     <td>${escapeHtml(item.category_label)}</td>
                     <td><span class="badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority_label)}</span></td>
+                    <td><span class="badge attention-${escapeHtml(item.attention_level)}">${escapeHtml(item.attention_level_label)} (${escapeHtml(item.attention_score)})</span></td>
                     <td><span class="badge ${escapeHtml(shownStatusValue)}">${escapeHtml(shownStatusLabel)}</span></td>
                     <td>
                         <select class="status-select" data-item-key="${escapeHtml(itemKey)}">
@@ -710,6 +758,7 @@ function renderBatchTable(items) {
                         </select>
                     </td>
                     <td>${escapeHtml(item.recommended_next_action_label)}</td>
+                    <td>${escapeHtml(friction)}</td>
                     <td>${escapeHtml(missing)}</td>
                 </tr>
             `;
@@ -739,6 +788,7 @@ function resetBatchVisuals(status = "-") {
     filterPriority.value = "";
     filterCategory.innerHTML = '<option value="">Toutes</option>';
     filterStatus.innerHTML = '<option value="">Tous</option>';
+    filterAttention.value = "";
     filterSearch.value = "";
     filterMissingOnly.checked = false;
     batchFilterStatus.textContent = "Aucun filtre actif.";
@@ -755,8 +805,16 @@ function resetBatchVisuals(status = "-") {
             <span>Incomplets</span>
             <strong>${escapeHtml(status)}</strong>
         </div>
+        <div class="metric">
+            <span>Attention critique</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+        <div class="metric">
+            <span>Doublons suspects</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
     `;
-    batchTableBody.innerHTML = '<tr><td colspan="9">Aucun batch lance.</td></tr>';
+    batchTableBody.innerHTML = '<tr><td colspan="11">Aucun batch lance.</td></tr>';
     caseDetail.innerHTML = '<p class="csv-status">Clique sur une ligne du batch pour afficher le detail du dossier.</p>';
 }
 
@@ -792,6 +850,7 @@ function applyBatchFilters() {
     const selectedPriority = filterPriority.value;
     const selectedCategory = filterCategory.value;
     const selectedStatus = filterStatus.value;
+    const selectedAttention = filterAttention.value;
     const searchTerm = filterSearch.value.trim().toLowerCase();
     const missingOnly = filterMissingOnly.checked;
     let visibleCount = 0;
@@ -800,10 +859,16 @@ function applyBatchFilters() {
         const matchesPriority = !selectedPriority || row.dataset.priority === selectedPriority;
         const matchesCategory = !selectedCategory || row.dataset.category === selectedCategory;
         const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
+        const matchesAttention = !selectedAttention || row.dataset.attention === selectedAttention;
         const matchesMissing = !missingOnly || row.dataset.missing === "yes";
         const matchesSearch = !searchTerm || row.dataset.search.includes(searchTerm);
         const isVisible =
-            matchesPriority && matchesCategory && matchesStatus && matchesMissing && matchesSearch;
+            matchesPriority &&
+            matchesCategory &&
+            matchesStatus &&
+            matchesAttention &&
+            matchesMissing &&
+            matchesSearch;
 
         row.classList.toggle("batch-row-hidden", !isVisible);
         if (isVisible) {
@@ -922,6 +987,12 @@ function renderCaseDetail(item) {
     const missing = item.missing_information_labels?.length
         ? item.missing_information_labels.join(", ")
         : "Aucune";
+    const friction = item.friction_flag_labels?.length
+        ? item.friction_flag_labels.join(", ")
+        : "Aucune";
+    const duplicateInfo = item.duplicate_suspected
+        ? `Oui (${item.duplicate_cluster_size} dossier(s) proches dans le batch)`
+        : "Non";
 
     caseDetail.innerHTML = `
         <div class="case-detail-grid">
@@ -950,6 +1021,10 @@ function renderCaseDetail(item) {
                 <strong><span class="badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority_label)}</span></strong>
             </div>
             <div class="case-detail-item">
+                <span>Attention</span>
+                <strong><span class="badge attention-${escapeHtml(item.attention_level)}">${escapeHtml(item.attention_level_label)} (${escapeHtml(item.attention_score)})</span></strong>
+            </div>
+            <div class="case-detail-item">
                 <span>Statut effectif</span>
                 <strong><span class="badge ${escapeHtml(shownStatusValue)}">${escapeHtml(shownStatusLabel)}</span></strong>
             </div>
@@ -960,6 +1035,14 @@ function renderCaseDetail(item) {
             <div class="case-detail-item">
                 <span>Informations manquantes</span>
                 <strong>${escapeHtml(missing)}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Friction detectee</span>
+                <strong>${escapeHtml(friction)}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Doublon suspect</span>
+                <strong>${escapeHtml(duplicateInfo)}</strong>
             </div>
         </div>
         <div>
@@ -975,6 +1058,20 @@ function renderCaseDetail(item) {
             <pre class="output">${escapeHtml(item.claim_text || "Texte non disponible.")}</pre>
         </div>
     `;
+}
+
+function renderAttention({ level, score, flags }) {
+    attentionSummary.innerHTML = `
+        <div><dt>Attention</dt><dd>${escapeHtml(level)}</dd></div>
+        <div><dt>Score</dt><dd>${escapeHtml(score)}</dd></div>
+    `;
+
+    if (!flags || flags.length === 0) {
+        frictionList.innerHTML = "<li>Aucun point de friction detecte.</li>";
+        return;
+    }
+
+    frictionList.innerHTML = flags.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 }
 
 function getCurrentCarrierProfile() {

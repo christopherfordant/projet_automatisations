@@ -534,6 +534,21 @@ button:disabled {
     color: #0f4c5c;
 }
 
+.badge.attention-critical {
+    background: #f7d8d2;
+    color: #8a1c1c;
+}
+
+.badge.attention-elevated {
+    background: #fff0cc;
+    color: #9a5b00;
+}
+
+.badge.attention-standard {
+    background: #e1f1ea;
+    color: #17624d;
+}
+
 .batch-details {
     margin-top: 16px;
 }

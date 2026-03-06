@@ -14,6 +14,8 @@ const filterStatus = document.getElementById("filter-status");
 const filterSearch = document.getElementById("filter-search");
 const filterMissingOnly = document.getElementById("filter-missing-only");
 const batchFilterStatus = document.getElementById("batch-filter-status");
+const actionLogBody = document.getElementById("action-log-body");
+const clearLogButton = document.getElementById("clear-log");
 const claimText = form.claim_text;
 const csvFileInput = document.getElementById("csv-file");
 const csvRowSelect = document.getElementById("csv-row-select");
@@ -25,6 +27,7 @@ const csvFileList = document.getElementById("csv-file-list");
 let csvRows = [];
 let lastBatchItems = [];
 let manualStatusOverrides = {};
+let actionLogEntries = [];
 
 fillExample.addEventListener("click", () => {
     form.channel.value = "email";
@@ -48,6 +51,7 @@ filterStatus.addEventListener("change", applyBatchFilters);
 filterSearch.addEventListener("input", applyBatchFilters);
 filterMissingOnly.addEventListener("change", applyBatchFilters);
 batchTableBody.addEventListener("change", handleStatusOverrideChange);
+clearLogButton.addEventListener("click", clearActionLog);
 csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
@@ -170,6 +174,12 @@ async function runBatchAnalysis() {
         exportBatchButton.disabled = data.items.length === 0;
         batchOutput.textContent = JSON.stringify(data, null, 2);
         applyBatchFilters();
+        addLogEntry({
+            action: "Batch lance",
+            source: `${csvRows.length} ligne(s)`,
+            caseRef: `${data.summary.total_items} dossier(s)`,
+            detail: `${data.summary.high_priority} prioritaire(s), ${data.summary.missing_information_cases} incomplet(s)`,
+        });
     } catch (error) {
         resetBatchVisuals("Erreur");
         batchOutput.textContent = String(error);
@@ -668,6 +678,14 @@ function handleStatusOverrideChange(event) {
 
     renderBatchTable(lastBatchItems);
     applyBatchFilters();
+    addLogEntry({
+        action: value ? "Statut modifie" : "Statut reinitialise",
+        source: findSourceLabel(
+            lastBatchItems.find((item) => buildItemKey(item) === itemKey) || {},
+        ),
+        caseRef: itemKey.split("::").slice(1, 3).filter(Boolean).join(" / ") || "Dossier inconnu",
+        detail: value ? `Nouveau statut: ${label}` : "Retour au statut automatique",
+    });
 }
 
 function renderStatusOptions(item, override) {
@@ -690,4 +708,39 @@ function buildItemKey(item) {
         item.contract_id || "",
         item.claim_text || "",
     ].join("::");
+}
+
+function addLogEntry({ action, source, caseRef, detail }) {
+    actionLogEntries.unshift({
+        timestamp: new Date().toLocaleString("fr-FR"),
+        action,
+        source,
+        caseRef,
+        detail,
+    });
+    renderActionLog();
+}
+
+function renderActionLog() {
+    if (actionLogEntries.length === 0) {
+        actionLogBody.innerHTML = '<tr><td colspan="5">Aucune action journalisee.</td></tr>';
+        return;
+    }
+
+    actionLogBody.innerHTML = actionLogEntries
+        .map((entry) => `
+            <tr>
+                <td>${escapeHtml(entry.timestamp)}</td>
+                <td>${escapeHtml(entry.action)}</td>
+                <td>${escapeHtml(entry.source)}</td>
+                <td>${escapeHtml(entry.caseRef)}</td>
+                <td>${escapeHtml(entry.detail)}</td>
+            </tr>
+        `)
+        .join("");
+}
+
+function clearActionLog() {
+    actionLogEntries = [];
+    renderActionLog();
 }

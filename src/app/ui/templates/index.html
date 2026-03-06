@@ -249,6 +249,31 @@
                 <pre id="batch-output" class="output">Aucun batch lance.</pre>
             </details>
         </section>
+
+        <section class="card">
+            <h2>Journal d'actions</h2>
+            <div class="batch-toolbar">
+                <button type="button" id="clear-log" class="secondary">Vider le journal</button>
+            </div>
+            <div class="table-wrap">
+                <table class="batch-table">
+                    <thead>
+                        <tr>
+                            <th>Horodatage</th>
+                            <th>Action</th>
+                            <th>Source</th>
+                            <th>Dossier</th>
+                            <th>Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody id="action-log-body">
+                        <tr>
+                            <td colspan="5">Aucune action journalisee.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 
     <script src="/static/app.js"></script>

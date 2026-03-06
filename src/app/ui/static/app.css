@@ -121,6 +121,41 @@ h1 {
     font: 400 0.92rem/1.4 "Segoe UI", sans-serif;
 }
 
+.dropzone {
+    display: grid;
+    gap: 6px;
+    padding: 18px;
+    border: 2px dashed rgba(0, 95, 115, 0.35);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.65);
+    color: var(--ink);
+    text-align: center;
+    transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+}
+
+.dropzone strong,
+.dropzone span {
+    display: block;
+}
+
+.dropzone span {
+    color: var(--muted);
+    font: 400 0.92rem/1.4 "Segoe UI", sans-serif;
+}
+
+.dropzone.is-active {
+    border-color: var(--accent-2);
+    background: rgba(202, 103, 2, 0.08);
+    transform: translateY(-1px);
+}
+
+.file-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--muted);
+    font: 400 0.92rem/1.5 "Segoe UI", sans-serif;
+}
+
 .form {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

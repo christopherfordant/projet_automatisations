@@ -30,8 +30,8 @@
 
                 <div class="csv-actions">
                     <label class="csv-field">
-                        Fichier CSV
-                        <input type="file" id="csv-file" accept=".csv,text/csv">
+                        Fichiers CSV
+                        <input type="file" id="csv-file" accept=".csv,text/csv" multiple>
                     </label>
 
                     <label class="csv-field">
@@ -46,7 +46,15 @@
                     </a>
                 </div>
 
+                <div id="csv-dropzone" class="dropzone" tabindex="0">
+                    <strong>Glisse-depose tes CSV ici</strong>
+                    <span>ou utilise le selecteur de fichiers pour en charger plusieurs d'un coup.</span>
+                </div>
+
                 <p id="csv-status" class="csv-status">Aucun CSV charge.</p>
+                <ul id="csv-file-list" class="file-list">
+                    <li>Aucun fichier importe.</li>
+                </ul>
             </div>
 
             <form id="claims-form" class="form">

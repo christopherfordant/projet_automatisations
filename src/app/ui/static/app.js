@@ -11,6 +11,8 @@ const csvRowSelect = document.getElementById("csv-row-select");
 const csvStatus = document.getElementById("csv-status");
 const csvPreview = document.getElementById("csv-preview");
 const runBatchButton = document.getElementById("run-batch");
+const csvDropzone = document.getElementById("csv-dropzone");
+const csvFileList = document.getElementById("csv-file-list");
 let csvRows = [];
 
 fillExample.addEventListener("click", () => {
@@ -28,6 +30,10 @@ claimText.addEventListener("input", autofillIdentifiers);
 csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
 runBatchButton.addEventListener("click", runBatchAnalysis);
+csvDropzone.addEventListener("dragenter", activateDropzone);
+csvDropzone.addEventListener("dragover", activateDropzone);
+csvDropzone.addEventListener("dragleave", deactivateDropzone);
+csvDropzone.addEventListener("drop", handleDrop);
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -170,31 +176,78 @@ function autofillIdentifiers() {
 }
 
 async function handleCsvUpload(event) {
-    const [file] = event.target.files;
-    if (!file) {
+    const files = Array.from(event.target.files || []);
+    await importCsvFiles(files);
+}
+
+function handleDrop(event) {
+    event.preventDefault();
+    deactivateDropzone();
+    const files = Array.from(event.dataTransfer?.files || []);
+    void importCsvFiles(files);
+}
+
+function activateDropzone(event) {
+    event.preventDefault();
+    csvDropzone.classList.add("is-active");
+}
+
+function deactivateDropzone(event) {
+    if (event) {
+        event.preventDefault();
+    }
+    csvDropzone.classList.remove("is-active");
+}
+
+async function importCsvFiles(files) {
+    const csvFiles = files.filter((file) => file.name.toLowerCase().endsWith(".csv"));
+    if (csvFiles.length === 0) {
         csvStatus.textContent = "Aucun CSV charge.";
         csvPreview.textContent = "Aucun apercu disponible.";
         csvRowSelect.innerHTML = '<option value="">Aucune ligne chargee</option>';
+        csvFileList.innerHTML = "<li>Aucun fichier importe.</li>";
         csvRows = [];
         return;
     }
 
-    const content = await file.text();
-    csvRows = parseCsv(content);
+    csvRows = [];
+    const importedFiles = [];
+
+    for (const file of csvFiles) {
+        const content = await file.text();
+        const rows = parseCsv(content).map((row) => ({
+            ...row,
+            source_file: file.name,
+        }));
+
+        if (rows.length > 0) {
+            importedFiles.push({
+                name: file.name,
+                rows: rows.length,
+            });
+            csvRows.push(...rows);
+        }
+    }
 
     if (csvRows.length === 0) {
-        csvStatus.textContent = "Le fichier est vide ou invalide.";
-        csvPreview.textContent = content;
+        csvStatus.textContent = "Les CSV charges sont vides ou invalides.";
+        csvPreview.textContent = "Aucun apercu disponible.";
         csvRowSelect.innerHTML = '<option value="">Aucune ligne exploitable</option>';
+        csvFileList.innerHTML = "<li>Aucun fichier exploitable.</li>";
         return;
     }
 
-    csvStatus.textContent = `${csvRows.length} ligne(s) detectee(s) dans ${file.name}.`;
+    csvStatus.textContent = `${csvRows.length} ligne(s) detectee(s) dans ${importedFiles.length} fichier(s).`;
     csvPreview.textContent = JSON.stringify(csvRows.slice(0, 3), null, 2);
+    csvFileList.innerHTML = importedFiles
+        .map((file) => `<li>${escapeHtml(file.name)} - ${file.rows} ligne(s)</li>`)
+        .join("");
     csvRowSelect.innerHTML = csvRows
         .map((row, index) => {
-            const label = row.customer_id || row.contract_id || row.claim_text || `Ligne ${index + 1}`;
-            return `<option value="${index}">Ligne ${index + 1} - ${escapeHtml(label).slice(0, 80)}</option>`;
+            const label =
+                row.customer_id || row.contract_id || row.claim_text || `Ligne ${index + 1}`;
+            const source = row.source_file ? `[${row.source_file}] ` : "";
+            return `<option value="${index}">${source}Ligne ${index + 1} - ${escapeHtml(label).slice(0, 80)}</option>`;
         })
         .join("");
 

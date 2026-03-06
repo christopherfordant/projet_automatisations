@@ -1,9 +1,11 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes.automations import router as automations_router
 from app.api.routes.health import router as health_router
 from app.api.routes.providers import router as providers_router
 from app.core.config import get_settings
+from app.ui.routes import router as ui_router
 
 
 settings = get_settings()
@@ -18,4 +20,5 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(providers_router)
 app.include_router(automations_router)
-
+app.include_router(ui_router)
+app.mount("/static", StaticFiles(directory="src/app/ui/static"), name="static")

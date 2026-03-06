@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutuelle AI Lab</title>
+    <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+    <main class="layout">
+        <section class="hero">
+            <p class="eyebrow">Interface de test</p>
+            <h1>Tester le module claims intake sans coder</h1>
+            <p class="intro">
+                Cette page envoie une demande vers l'API et affiche une reponse interpretable:
+                categorie, priorite, informations manquantes et prochaine action.
+            </p>
+        </section>
+
+        <section class="panel">
+            <form id="claims-form" class="form">
+                <label>
+                    Canal
+                    <select name="channel">
+                        <option value="email">Email</option>
+                        <option value="telephone">Telephone</option>
+                        <option value="courrier">Courrier</option>
+                        <option value="portail">Portail</option>
+                    </select>
+                </label>
+
+                <label>
+                    ID client
+                    <input type="text" name="customer_id" placeholder="Ex: CL-2026-001">
+                </label>
+
+                <label>
+                    ID contrat
+                    <input type="text" name="contract_id" placeholder="Ex: CT-45879">
+                </label>
+
+                <label>
+                    Provider IA
+                    <select name="provider">
+                        <option value="mock">Mock (recommande pour tester)</option>
+                        <option value="ollama">Ollama local</option>
+                    </select>
+                </label>
+
+                <label class="full">
+                    Description de la demande
+                    <textarea
+                        name="claim_text"
+                        rows="8"
+                        placeholder="Ex: Bonjour, j'ai une relance urgente pour un remboursement de facture en retard."
+                    ></textarea>
+                </label>
+
+                <label class="full">
+                    Pieces jointes
+                    <input type="text" name="attached_documents" placeholder="Ex: facture dentaire, devis optique">
+                </label>
+
+                <div class="actions">
+                    <button type="submit">Lancer le test</button>
+                    <button type="button" id="fill-example" class="secondary">Charger un exemple</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="results-grid">
+            <article class="card">
+                <h2>Lecture rapide</h2>
+                <dl id="summary" class="summary">
+                    <div><dt>Statut</dt><dd>En attente</dd></div>
+                    <div><dt>Categorie</dt><dd>-</dd></div>
+                    <div><dt>Priorite</dt><dd>-</dd></div>
+                    <div><dt>Action</dt><dd>-</dd></div>
+                </dl>
+            </article>
+
+            <article class="card">
+                <h2>Informations manquantes</h2>
+                <ul id="missing-list" class="list">
+                    <li>Aucune execution pour l'instant.</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="card">
+            <h2>Resume operateur</h2>
+            <pre id="operator-summary" class="output">Le resume apparaitra ici.</pre>
+        </section>
+
+        <section class="card">
+            <h2>Reponse technique complete</h2>
+            <pre id="raw-output" class="output">Le JSON complet apparaitra ici.</pre>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
+

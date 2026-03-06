@@ -13,6 +13,12 @@ def test_healthcheck() -> None:
     assert payload["status"] == "ok"
 
 
+def test_home_page_is_available() -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Tester le module claims intake sans coder" in response.text
+
+
 def test_claims_intake_returns_structured_response() -> None:
     response = client.post(
         "/automations/claims-intake",

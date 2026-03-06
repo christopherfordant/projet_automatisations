@@ -18,6 +18,15 @@ class DocumentAnalysisRequest(BaseModel):
     provider: str | None = None
 
 
+class DocumentCompletenessRequest(BaseModel):
+    document_type: str = Field(..., description="Type de dossier ou document a verifier")
+    customer_id: str | None = Field(default=None, description="Identifiant client si connu")
+    contract_id: str | None = Field(default=None, description="Reference dossier si connue")
+    document_text: str = Field(..., description="Texte libre ou contexte du dossier")
+    attached_documents: list[str] = Field(default_factory=list, description="Pieces deja declarees")
+    provider: str | None = Field(default=None, description="Provider IA a utiliser")
+
+
 class ClaimIntakeRequest(BaseModel):
     customer_id: str | None = Field(default=None, description="Identifiant client si connu")
     contract_id: str | None = Field(default=None, description="Reference contrat si connue")

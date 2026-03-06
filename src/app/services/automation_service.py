@@ -8,6 +8,7 @@ from app.schemas.automation import (
     AutomationRequest,
     ClaimIntakeBatchRequest,
     ClaimIntakeRequest,
+    DocumentCompletenessRequest,
     DocumentAnalysisRequest,
 )
 
@@ -61,6 +62,29 @@ class AutomationService:
         "critical": "Critique",
         "elevated": "Elevee",
         "standard": "Standard",
+    }
+
+    DOCUMENT_REQUIREMENTS = {
+        "reimbursement": {
+            "label": "Remboursement",
+            "required_documents": ["facture", "numero adherent", "reference dossier"],
+            "optional_documents": ["rib", "decompte secu", "feuille de soin"],
+        },
+        "optical_quote": {
+            "label": "Devis optique",
+            "required_documents": ["devis optique", "numero adherent", "ordonnance"],
+            "optional_documents": ["monture", "reference contrat"],
+        },
+        "complaint": {
+            "label": "Reclamation",
+            "required_documents": ["courrier de reclamation", "numero dossier", "historique echanges"],
+            "optional_documents": ["preuve de delai", "capture espace client"],
+        },
+        "hospitalization": {
+            "label": "Hospitalisation",
+            "required_documents": ["compte rendu", "facture clinique", "numero adherent"],
+            "optional_documents": ["prise en charge", "bulletin hospitalisation"],
+        },
     }
 
     async def run_intake(self, payload: AutomationRequest) -> dict[str, object]:
@@ -191,6 +215,87 @@ class AutomationService:
         return {
             "document_name": payload.document_name,
             "result": result,
+        }
+
+    async def run_document_completeness(
+        self, payload: DocumentCompletenessRequest
+    ) -> dict[str, object]:
+        settings = get_settings()
+        provider = get_provider(payload.provider)
+        profile = self.DOCUMENT_REQUIREMENTS.get(
+            payload.document_type,
+            {
+                "label": payload.document_type,
+                "required_documents": ["numero adherent", "reference dossier"],
+                "optional_documents": ["piece justificative"],
+            },
+        )
+
+        normalized_text = payload.document_text.lower()
+        declared_documents = [item.strip().lower() for item in payload.attached_documents if item.strip()]
+        available_tokens = " ".join([normalized_text, *declared_documents])
+
+        required_status = [
+            {
+                "document": document,
+                "label": document.title(),
+                "present": self._document_present(document, available_tokens),
+            }
+            for document in profile["required_documents"]
+        ]
+        optional_status = [
+            {
+                "document": document,
+                "label": document.title(),
+                "present": self._document_present(document, available_tokens),
+            }
+            for document in profile["optional_documents"]
+        ]
+
+        missing_required = [item["document"] for item in required_status if not item["present"]]
+        completion_ratio = int(
+            round(
+                (
+                    sum(1 for item in required_status if item["present"])
+                    / max(len(required_status), 1)
+                )
+                * 100
+            )
+        )
+        readiness_status = self._derive_readiness_status(completion_ratio, missing_required)
+
+        prompt = PromptRequest(
+            system_prompt=(
+                "Tu aides un gestionnaire mutuelle a verifier la completude documentaire d'un dossier. "
+                "Tu proposes un bref resume operateur en francais."
+            ),
+            user_prompt=(
+                f"Type de dossier: {profile['label']}\n"
+                f"Client: {payload.customer_id or 'inconnu'}\n"
+                f"Dossier: {payload.contract_id or 'inconnu'}\n"
+                f"Pieces declarees: {', '.join(payload.attached_documents) or 'aucune'}\n"
+                f"Texte libre:\n{payload.document_text}"
+            ),
+            model=settings.default_ai_model,
+        )
+        ai_result = await provider.generate(prompt)
+
+        return {
+            "module": "document_completeness",
+            "document_type": payload.document_type,
+            "document_type_label": profile["label"],
+            "customer_id": payload.customer_id,
+            "contract_id": payload.contract_id,
+            "required_documents": required_status,
+            "optional_documents": optional_status,
+            "missing_required_documents": missing_required,
+            "missing_required_labels": [item.title() for item in missing_required],
+            "completion_ratio": completion_ratio,
+            "readiness_status": readiness_status,
+            "readiness_status_label": self._format_readiness_status(readiness_status),
+            "operator_summary": ai_result["content"],
+            "ai_provider": ai_result["provider"],
+            "ai_model": ai_result["model"],
         }
 
     @staticmethod
@@ -394,6 +499,37 @@ class AutomationService:
         if customer_id:
             return f"customer::{customer_id}::{category}"
         return f"text::{category}::{claim_text[:80]}"
+
+    @staticmethod
+    def _document_present(document: str, available_tokens: str) -> bool:
+        normalized_document = document.lower()
+        variants = {
+            "numero adherent": ["numero adherent", "adherent", "client cl-", "assure"],
+            "reference dossier": ["reference dossier", "dossier", "sinistre", "contract_id"],
+            "courrier de reclamation": ["courrier reclamation", "reclamation", "plainte"],
+            "historique echanges": ["historique", "echanges", "email", "conversation"],
+            "facture clinique": ["facture clinique", "facture", "clinique"],
+            "compte rendu": ["compte rendu", "hospitalisation", "sortie"],
+        }
+        tokens = variants.get(normalized_document, [normalized_document])
+        return any(token in available_tokens for token in tokens)
+
+    @staticmethod
+    def _derive_readiness_status(completion_ratio: int, missing_required: list[str]) -> str:
+        if not missing_required and completion_ratio >= 100:
+            return "ready"
+        if completion_ratio >= 60:
+            return "partial"
+        return "blocked"
+
+    @staticmethod
+    def _format_readiness_status(status: str) -> str:
+        labels = {
+            "ready": "Pret a instruire",
+            "partial": "A completer",
+            "blocked": "Bloque documentaire",
+        }
+        return labels.get(status, status)
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

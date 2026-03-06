@@ -4,6 +4,7 @@ from app.schemas.automation import (
     AutomationRequest,
     ClaimIntakeBatchRequest,
     ClaimIntakeRequest,
+    DocumentCompletenessRequest,
     DocumentAnalysisRequest,
 )
 from app.services.automation_service import AutomationService
@@ -31,3 +32,8 @@ async def claims_intake_batch(payload: ClaimIntakeBatchRequest) -> dict[str, obj
 @router.post("/document-analysis")
 async def document_analysis(payload: DocumentAnalysisRequest) -> dict[str, object]:
     return await service.run_document_analysis(payload)
+
+
+@router.post("/document-completeness")
+async def document_completeness(payload: DocumentCompletenessRequest) -> dict[str, object]:
+    return await service.run_document_completeness(payload)

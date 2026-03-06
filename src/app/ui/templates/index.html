@@ -355,6 +355,96 @@
             </div>
         </section>
 
+        <section class="panel">
+            <div>
+                <p class="section-kicker">Completude documentaire</p>
+                <h2>Verifier si un dossier est exploitable tout de suite</h2>
+                <p class="hint">
+                    Ce module sert a controler les pieces attendues selon le type de dossier, pour
+                    reduire les allers-retours manuels.
+                </p>
+            </div>
+
+            <form id="document-form" class="form">
+                <label>
+                    Type de dossier
+                    <select name="document_type">
+                        <option value="reimbursement">Remboursement</option>
+                        <option value="optical_quote">Devis optique</option>
+                        <option value="complaint">Reclamation</option>
+                        <option value="hospitalization">Hospitalisation</option>
+                    </select>
+                </label>
+
+                <label>
+                    ID client
+                    <input type="text" name="customer_id" placeholder="Ex: CL-2026-001">
+                </label>
+
+                <label>
+                    ID dossier
+                    <input type="text" name="contract_id" placeholder="Ex: DOS-7788">
+                </label>
+
+                <label>
+                    Provider IA
+                    <select name="provider">
+                        <option value="mock">Mock (recommande pour tester)</option>
+                        <option value="ollama">Ollama local</option>
+                    </select>
+                </label>
+
+                <label class="full">
+                    Texte du dossier
+                    <textarea
+                        name="document_text"
+                        rows="6"
+                        placeholder="Ex: Bonjour, client CL-2048, dossier DOS-7788, je transmets une facture et un decompte pour remboursement."
+                    ></textarea>
+                </label>
+
+                <label class="full">
+                    Pieces declarees
+                    <input type="text" name="attached_documents" placeholder="Ex: facture, decompte secu, ordonnance">
+                </label>
+
+                <div class="actions">
+                    <button type="submit">Verifier la completude</button>
+                    <button type="button" id="fill-document-example" class="secondary">Charger un exemple</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="results-grid">
+            <article class="card">
+                <h2>Statut documentaire</h2>
+                <dl id="document-summary" class="summary">
+                    <div><dt>Type</dt><dd>-</dd></div>
+                    <div><dt>Etat</dt><dd>-</dd></div>
+                    <div><dt>Completude</dt><dd>-</dd></div>
+                </dl>
+            </article>
+
+            <article class="card">
+                <h2>Pieces requises manquantes</h2>
+                <ul id="document-missing-list" class="list">
+                    <li>Aucune verification pour l'instant.</li>
+                </ul>
+            </article>
+
+            <article class="card">
+                <h2>Pieces detectees</h2>
+                <ul id="document-present-list" class="list">
+                    <li>Aucune verification pour l'instant.</li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="card">
+            <h2>Resume documentaire</h2>
+            <pre id="document-output" class="output">Le resultat du controle documentaire apparaitra ici.</pre>
+        </section>
+
         <section class="card">
             <h2>Journal d'actions</h2>
             <div class="batch-toolbar">

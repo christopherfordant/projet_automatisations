@@ -1,4 +1,6 @@
 const form = document.getElementById("claims-form");
+const documentForm = document.getElementById("document-form");
+const fillDocumentExample = document.getElementById("fill-document-example");
 const carrierProfileSelect = document.getElementById("carrier-profile");
 const carrierProfileReadonly = document.getElementById("carrier-profile-readonly");
 const carrierBadge = document.getElementById("carrier-badge");
@@ -9,10 +11,14 @@ const carrierDocumentsList = document.getElementById("carrier-documents-list");
 const carrierRulesList = document.getElementById("carrier-rules-list");
 const fillExample = document.getElementById("fill-example");
 const summary = document.getElementById("summary");
+const documentSummary = document.getElementById("document-summary");
 const attentionSummary = document.getElementById("attention-summary");
 const missingList = document.getElementById("missing-list");
+const documentMissingList = document.getElementById("document-missing-list");
+const documentPresentList = document.getElementById("document-present-list");
 const frictionList = document.getElementById("friction-list");
 const operatorSummary = document.getElementById("operator-summary");
+const documentOutput = document.getElementById("document-output");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
@@ -173,6 +179,16 @@ fillExample.addEventListener("click", () => {
     autofillIdentifiers();
 });
 
+fillDocumentExample.addEventListener("click", () => {
+    documentForm.document_type.value = "reimbursement";
+    documentForm.customer_id.value = "CL-2048";
+    documentForm.contract_id.value = "DOS-7788";
+    documentForm.provider.value = "mock";
+    documentForm.document_text.value =
+        "Bonjour, client CL-2048, dossier DOS-7788, je transmets une facture et mon numero adherent pour un remboursement en attente.";
+    documentForm.attached_documents.value = "facture, numero adherent";
+});
+
 carrierProfileSelect.addEventListener("change", () => {
     renderCarrierProfile();
 });
@@ -194,6 +210,63 @@ csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
 csvDropzone.addEventListener("drop", handleDrop);
+
+documentForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const payload = {
+        document_type: documentForm.document_type.value,
+        customer_id: documentForm.customer_id.value || null,
+        contract_id: documentForm.contract_id.value || null,
+        provider: documentForm.provider.value,
+        document_text: documentForm.document_text.value,
+        attached_documents: documentForm.attached_documents.value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+    };
+
+    setDocumentSummary({
+        type: payload.document_type,
+        status: "Analyse...",
+        completion: "-",
+    });
+    documentMissingList.innerHTML = "<li>Verification en cours...</li>";
+    documentPresentList.innerHTML = "<li>Verification en cours...</li>";
+    documentOutput.textContent = "Chargement...";
+
+    try {
+        const response = await fetch("/automations/document-completeness", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(JSON.stringify(data, null, 2));
+        }
+
+        setDocumentSummary({
+            type: data.document_type_label,
+            status: data.readiness_status_label,
+            completion: `${data.completion_ratio}%`,
+        });
+        renderDocumentLists(data);
+        documentOutput.textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+        setDocumentSummary({
+            type: payload.document_type,
+            status: "Erreur",
+            completion: "-",
+        });
+        documentMissingList.innerHTML = "<li>La verification a echoue.</li>";
+        documentPresentList.innerHTML = "<li>Aucun resultat.</li>";
+        documentOutput.textContent = String(error);
+    }
+});
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -701,6 +774,38 @@ function renderBatchSummary(summaryData) {
             <strong>${escapeHtml(summaryData.duplicate_suspicions)}</strong>
         </div>
     `;
+}
+
+function setDocumentSummary({ type, status, completion }) {
+    documentSummary.innerHTML = `
+        <div><dt>Type</dt><dd>${escapeHtml(type)}</dd></div>
+        <div><dt>Etat</dt><dd>${escapeHtml(status)}</dd></div>
+        <div><dt>Completude</dt><dd>${escapeHtml(completion)}</dd></div>
+    `;
+}
+
+function renderDocumentLists(data) {
+    if (!data.missing_required_labels?.length) {
+        documentMissingList.innerHTML = "<li>Aucune piece requise manquante.</li>";
+    } else {
+        documentMissingList.innerHTML = data.missing_required_labels
+            .map((item) => `<li>${escapeHtml(item)}</li>`)
+            .join("");
+    }
+
+    const presentDocuments = [
+        ...(data.required_documents || []).filter((item) => item.present).map((item) => item.label),
+        ...(data.optional_documents || []).filter((item) => item.present).map((item) => item.label),
+    ];
+
+    if (!presentDocuments.length) {
+        documentPresentList.innerHTML = "<li>Aucune piece detectee.</li>";
+        return;
+    }
+
+    documentPresentList.innerHTML = presentDocuments
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("");
 }
 
 function renderBatchTable(items) {

@@ -49,7 +49,14 @@ pip install -e .[dev]
 Copy-Item .env.example .env
 ```
 
-4. Lancer l'API:
+4. Demarrer Ollama et charger un modele:
+
+```powershell
+ollama serve
+ollama pull qwen2.5:7b
+```
+
+5. Lancer l'API:
 
 ```powershell
 uvicorn app.main:app --reload --app-dir src
@@ -60,6 +67,7 @@ uvicorn app.main:app --reload --app-dir src
 - `GET /health`
 - `GET /providers`
 - `POST /automations/intake`
+- `POST /automations/claims-intake`
 - `POST /automations/document-analysis`
 
 ## Vision de modularisation
@@ -72,10 +80,16 @@ Exemples de modules metier a brancher ensuite:
 - generation de syntheses operateur;
 - supervision et traces d'execution.
 
+Le premier module concret fourni ici est `claims intake`, pour:
+
+- classer une demande;
+- estimer une urgence;
+- lister les informations manquantes;
+- proposer la prochaine action a lancer.
+
 ## GitHub
 
 Le depot local est pret pour des commits incrementaux. Le push GitHub demandera ensuite:
 
 - une URL de depot distant;
 - une authentification GitHub valide sur la machine.
-

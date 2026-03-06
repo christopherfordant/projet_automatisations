@@ -17,3 +17,11 @@ class DocumentAnalysisRequest(BaseModel):
     )
     provider: str | None = None
 
+
+class ClaimIntakeRequest(BaseModel):
+    customer_id: str | None = Field(default=None, description="Identifiant client si connu")
+    contract_id: str | None = Field(default=None, description="Reference contrat si connue")
+    channel: str = Field(default="email", description="Canal d'entree")
+    claim_text: str = Field(..., description="Demande ou signalement entrant")
+    attached_documents: list[str] = Field(default_factory=list, description="Liste descriptive des pieces")
+    provider: str | None = Field(default=None, description="Provider IA a utiliser")

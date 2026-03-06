@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     default_ai_provider: str = Field(default="ollama", alias="DEFAULT_AI_PROVIDER")
-    default_ai_model: str = Field(default="qwen3:14b", alias="DEFAULT_AI_MODEL")
+    default_ai_model: str = Field(default="qwen2.5:7b", alias="DEFAULT_AI_MODEL")
 
     ollama_base_url: str = Field(default="http://127.0.0.1:11434/v1", alias="OLLAMA_BASE_URL")
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
@@ -24,4 +24,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

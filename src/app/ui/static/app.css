@@ -307,6 +307,17 @@ dd {
     margin-bottom: 18px;
 }
 
+.batch-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .metric {
     padding: 16px;
     border-radius: 18px;

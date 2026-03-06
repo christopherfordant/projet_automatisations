@@ -7,6 +7,7 @@ const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
 const batchTableBody = document.getElementById("batch-table-body");
+const exportBatchButton = document.getElementById("export-batch");
 const claimText = form.claim_text;
 const csvFileInput = document.getElementById("csv-file");
 const csvRowSelect = document.getElementById("csv-row-select");
@@ -16,6 +17,7 @@ const runBatchButton = document.getElementById("run-batch");
 const csvDropzone = document.getElementById("csv-dropzone");
 const csvFileList = document.getElementById("csv-file-list");
 let csvRows = [];
+let lastBatchItems = [];
 
 fillExample.addEventListener("click", () => {
     form.channel.value = "email";
@@ -32,6 +34,7 @@ claimText.addEventListener("input", autofillIdentifiers);
 csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
 runBatchButton.addEventListener("click", runBatchAnalysis);
+exportBatchButton.addEventListener("click", exportBatchResults);
 csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
@@ -148,6 +151,8 @@ async function runBatchAnalysis() {
 
         renderBatchSummary(data.summary);
         renderBatchTable(data.items);
+        lastBatchItems = data.items;
+        exportBatchButton.disabled = data.items.length === 0;
         batchOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
         resetBatchVisuals("Erreur");
@@ -374,6 +379,75 @@ function normalizeHeader(header) {
         .replaceAll("-", "_");
 }
 
+function exportBatchResults() {
+    if (!lastBatchItems.length) {
+        return;
+    }
+
+    const headers = [
+        "source_file",
+        "customer_id",
+        "contract_id",
+        "category",
+        "category_label",
+        "priority",
+        "priority_label",
+        "recommended_next_action",
+        "recommended_next_action_label",
+        "missing_information",
+        "missing_information_labels",
+        "documents_received",
+        "operator_summary",
+        "ai_provider",
+        "ai_model",
+    ];
+
+    const rows = lastBatchItems.map((item) => {
+        const source = findSourceLabel(item);
+        return [
+            source,
+            item.customer_id || "",
+            item.contract_id || "",
+            item.category || "",
+            item.category_label || "",
+            item.priority || "",
+            item.priority_label || "",
+            item.recommended_next_action || "",
+            item.recommended_next_action_label || "",
+            (item.missing_information || []).join(" | "),
+            (item.missing_information_labels || []).join(" | "),
+            (item.documents_received || []).join(" | "),
+            item.operator_summary || "",
+            item.ai_provider || "",
+            item.ai_model || "",
+        ];
+    });
+
+    const csv = [headers, ...rows]
+        .map((row) => row.map(toCsvCell).join(","))
+        .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 19).replaceAll(":", "-");
+
+    link.href = url;
+    link.download = `claims-intake-batch-results-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function toCsvCell(value) {
+    const text = String(value ?? "");
+    if (text.includes(",") || text.includes('"') || text.includes("\n")) {
+        return `"${text.replaceAll('"', '""')}"`;
+    }
+    return text;
+}
+
 function renderBatchSummary(summaryData) {
     batchSummary.innerHTML = `
         <div class="metric">
@@ -431,6 +505,8 @@ function findSourceLabel(item) {
 }
 
 function resetBatchVisuals(status = "-") {
+    lastBatchItems = [];
+    exportBatchButton.disabled = true;
     batchSummary.innerHTML = `
         <div class="metric">
             <span>Total dossiers</span>

@@ -1,0 +1,143 @@
+{
+  "name": "Mutuelle Claims Intake Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "mutuelle/claims-intake",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "Webhook_Claims_Intake",
+      "name": "Webhook Claims Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        120
+      ],
+      "webhookId": "mutuelle-claims-intake-webhook"
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "channel",
+              "value": "={{$json.body.channel || 'email'}}"
+            },
+            {
+              "name": "customer_id",
+              "value": "={{$json.body.customer_id || ''}}"
+            },
+            {
+              "name": "contract_id",
+              "value": "={{$json.body.contract_id || ''}}"
+            },
+            {
+              "name": "provider",
+              "value": "={{$json.body.provider || 'mock'}}"
+            },
+            {
+              "name": "claim_text",
+              "value": "={{$json.body.claim_text || ''}}"
+            }
+          ],
+          "json": [
+            {
+              "name": "attached_documents",
+              "value": "={{$json.body.attached_documents || []}}"
+            }
+          ]
+        }
+      },
+      "id": "Prepare_Request",
+      "name": "Prepare Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        40,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/automations/claims-intake",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"channel\": $json.channel,\n  \"customer_id\": $json.customer_id || null,\n  \"contract_id\": $json.contract_id || null,\n  \"provider\": $json.provider,\n  \"claim_text\": $json.claim_text,\n  \"attached_documents\": $json.attached_documents\n}",
+        "options": {}
+      },
+      "id": "Call_FastAPI",
+      "name": "Call FastAPI Claims Intake",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}",
+        "options": {}
+      },
+      "id": "Respond_To_Caller",
+      "name": "Respond To Caller",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        120
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Claims Intake": {
+      "main": [
+        [
+          {
+            "node": "Prepare Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Request": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI Claims Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call FastAPI Claims Intake": {
+      "main": [
+        [
+          {
+            "node": "Respond To Caller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8e4b8f72-6e38-46b1-80a9-claims-intake-demo",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "mutuelleClaimsIntakeWebhook"
+}

@@ -26,6 +26,9 @@ Le socle est pense pour:
 - `scripts/start_local_ai_stack.ps1`: demarrage de la stack locale d'infrastructure.
 - `infra/docker-compose.local.yml`: socle local `n8n + Postgres + Qdrant + Ollama`.
 - `docs/LOCAL_AI_STACK.md`: architecture cible.
+- `docs/N8N_SUPABASE_FLOW.md`: branchement `n8n + FastAPI + Supabase`.
+- `n8n/workflows`: workflows importables dans n8n.
+- `supabase/schema`: schema SQL local pour Supabase/Postgres.
 
 ## Choix techniques
 
@@ -51,6 +54,17 @@ Objectif d'architecture:
 Voir aussi:
 
 - [docs/LOCAL_AI_STACK.md](docs/LOCAL_AI_STACK.md)
+- [docs/N8N_SUPABASE_FLOW.md](docs/N8N_SUPABASE_FLOW.md)
+
+Workflows n8n ajoutes:
+
+- `claims intake` unitaire
+- `claims intake` batch
+
+Helpers SQL ajoutes:
+
+- schema coeur `claim_batches`, `claim_cases`, `operator_actions`, `document_checks`
+- fonction `save_claim_batch(...)` pour inserer un batch complet depuis n8n
 
 ## Demarrage local
 

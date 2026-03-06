@@ -87,6 +87,12 @@ Si Docker n'est pas disponible, lancer d'abord:
 .\scripts\start_n8n_local.ps1
 ```
 
+Si l'ecran d'inscription retourne une erreur SQL de type `User.role` ou `roleSlug`, reinitialiser les donnees locales `n8n`:
+
+```powershell
+.\scripts\start_n8n_local.ps1 -ResetLocalData
+```
+
 Pour le batch:
 
 1. `Import from file`

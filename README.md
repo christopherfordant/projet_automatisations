@@ -145,6 +145,12 @@ Si Docker n'est pas disponible sur la machine, tu peux lancer `n8n` directement 
 
 Par defaut, l'interface sera disponible sur `http://127.0.0.1:5678`.
 
+Si `n8n` affiche une erreur de schema SQLite au premier acces, tu peux reinitialiser proprement ses donnees locales avec sauvegarde:
+
+```powershell
+.\scripts\start_n8n_local.ps1 -ResetLocalData
+```
+
 ## Endpoints initiaux
 
 - `GET /health`

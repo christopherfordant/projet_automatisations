@@ -39,6 +39,12 @@ Si Docker n'est pas disponible, `n8n` peut aussi etre lance en local avec:
 .\scripts\start_n8n_local.ps1
 ```
 
+En cas de conflit de schema SQLite entre deux versions de `n8n`, reinitialiser l'instance locale avec sauvegarde:
+
+```powershell
+.\scripts\start_n8n_local.ps1 -ResetLocalData
+```
+
 ## Supabase local
 
 La self-hosting `Supabase` complete est plus lourde que le reste de la stack. Pour rester pragmatique:

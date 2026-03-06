@@ -52,7 +52,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/automations/claims-intake/batch",
+        "url": "http://127.0.0.1:8000/automations/claims-intake/batch",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"items\": $json.items\n}",

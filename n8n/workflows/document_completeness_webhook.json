@@ -72,7 +72,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/automations/document-completeness",
+        "url": "http://127.0.0.1:8000/automations/document-completeness",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"document_type\": $json.document_type,\n  \"customer_id\": $json.customer_id || null,\n  \"contract_id\": $json.contract_id || null,\n  \"provider\": $json.provider,\n  \"message_tone\": $json.message_tone,\n  \"output_channel\": $json.output_channel,\n  \"document_text\": $json.document_text,\n  \"attached_documents\": $json.attached_documents\n}",

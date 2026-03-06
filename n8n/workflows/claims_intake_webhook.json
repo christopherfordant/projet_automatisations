@@ -64,7 +64,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:8000/automations/claims-intake",
+        "url": "http://127.0.0.1:8000/automations/claims-intake",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"channel\": $json.channel,\n  \"customer_id\": $json.customer_id || null,\n  \"contract_id\": $json.contract_id || null,\n  \"provider\": $json.provider,\n  \"claim_text\": $json.claim_text,\n  \"attached_documents\": $json.attached_documents\n}",

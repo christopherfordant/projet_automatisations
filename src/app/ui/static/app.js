@@ -21,12 +21,15 @@ const frictionList = document.getElementById("friction-list");
 const operatorSummary = document.getElementById("operator-summary");
 const documentOutput = document.getElementById("document-output");
 const documentRequestMessage = document.getElementById("document-request-message");
+const copyDocumentMessageButton = document.getElementById("copy-document-message");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
 const batchTableBody = document.getElementById("batch-table-body");
 const caseDetail = document.getElementById("case-detail");
 const exportBatchButton = document.getElementById("export-batch");
+const exportMissingActionsButton = document.getElementById("export-missing-actions");
+const missingActionsPanel = document.getElementById("missing-actions-panel");
 const filterPriority = document.getElementById("filter-priority");
 const filterCategory = document.getElementById("filter-category");
 const filterStatus = document.getElementById("filter-status");
@@ -201,6 +204,7 @@ csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
 runBatchButton.addEventListener("click", runBatchAnalysis);
 exportBatchButton.addEventListener("click", exportBatchResults);
+exportMissingActionsButton.addEventListener("click", exportMissingActions);
 filterPriority.addEventListener("change", applyBatchFilters);
 filterCategory.addEventListener("change", applyBatchFilters);
 filterStatus.addEventListener("change", applyBatchFilters);
@@ -209,11 +213,15 @@ filterSearch.addEventListener("input", applyBatchFilters);
 filterMissingOnly.addEventListener("change", applyBatchFilters);
 batchTableBody.addEventListener("change", handleStatusOverrideChange);
 batchTableBody.addEventListener("click", handleBatchRowClick);
+missingActionsPanel.addEventListener("click", handleMissingActionsClick);
 clearLogButton.addEventListener("click", clearActionLog);
 csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
 csvDropzone.addEventListener("drop", handleDrop);
+copyDocumentMessageButton.addEventListener("click", () => {
+    void copyToClipboard(documentRequestMessage.textContent, "Message documentaire copie.");
+});
 
 documentForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -433,10 +441,12 @@ async function runBatchAnalysis() {
 
         renderBatchSummary(data.summary);
         renderBatchTable(data.items);
+        renderMissingActionsPanel(data.items);
         lastBatchItems = data.items;
         hydrateCategoryFilter(data.items);
         hydrateStatusFilter(data.items);
         exportBatchButton.disabled = data.items.length === 0;
+        exportMissingActionsButton.disabled = !data.items.some((item) => item.missing_information.length);
         batchOutput.textContent = JSON.stringify(data, null, 2);
         applyBatchFilters();
         if (data.items[0]) {
@@ -767,6 +777,68 @@ function exportBatchResults() {
     URL.revokeObjectURL(url);
 }
 
+function exportMissingActions() {
+    const actionableItems = lastBatchItems.filter((item) => item.missing_information?.length);
+    if (!actionableItems.length) {
+        return;
+    }
+
+    const headers = [
+        "source_file",
+        "customer_id",
+        "contract_id",
+        "category_label",
+        "missing_information_labels",
+        "client_request_subject",
+        "client_request_message",
+    ];
+
+    const rows = actionableItems.map((item) => [
+        findSourceLabel(item),
+        item.customer_id || "",
+        item.contract_id || "",
+        item.category_label || "",
+        (item.missing_information_labels || []).join(" | "),
+        item.client_request_subject || "",
+        item.client_request_message || "",
+    ]);
+
+    const csv = [headers, ...rows]
+        .map((row) => row.map(toCsvCell).join(","))
+        .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date().toISOString().slice(0, 19).replaceAll(":", "-");
+
+    link.href = url;
+    link.download = `claims-intake-missing-actions-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+async function copyToClipboard(text, successMessage) {
+    try {
+        await navigator.clipboard.writeText(text || "");
+        addLogEntry({
+            action: "Copie message",
+            source: "Interface",
+            caseRef: "Message client",
+            detail: successMessage,
+        });
+    } catch {
+        addLogEntry({
+            action: "Copie echouee",
+            source: "Interface",
+            caseRef: "Message client",
+            detail: "Le navigateur a refuse la copie automatique.",
+        });
+    }
+}
+
 function toCsvCell(value) {
     const text = String(value ?? "");
     if (text.includes(",") || text.includes('"') || text.includes("\n")) {
@@ -848,6 +920,37 @@ function renderDocumentLists(data) {
 
     documentPresentList.innerHTML = presentDocuments
         .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("");
+}
+
+function renderMissingActionsPanel(items) {
+    const actionableItems = (items || []).filter((item) => item.missing_information?.length);
+    if (!actionableItems.length) {
+        missingActionsPanel.innerHTML =
+            '<p class="csv-status">Aucune relance client a preparer sur ce batch.</p>';
+        return;
+    }
+
+    missingActionsPanel.innerHTML = actionableItems
+        .map((item) => {
+            const itemKey = buildItemKey(item);
+            const missing = item.missing_information_labels.join(", ");
+            return `
+                <article class="action-card">
+                    <div class="action-card-head">
+                        <div>
+                            <strong>${escapeHtml(item.contract_id || item.customer_id || "Dossier sans reference")}</strong>
+                            <p class="csv-status">${escapeHtml(findSourceLabel(item))} • ${escapeHtml(item.category_label)}</p>
+                        </div>
+                        <button type="button" class="secondary action-copy-button" data-item-key="${escapeHtml(itemKey)}">
+                            Copier le message
+                        </button>
+                    </div>
+                    <p class="hint">Informations a demander: ${escapeHtml(missing)}</p>
+                    <pre class="output action-message">${escapeHtml(item.client_request_message || "Aucun message genere.")}</pre>
+                </article>
+            `;
+        })
         .join("");
 }
 
@@ -933,6 +1036,7 @@ function resetBatchVisuals(status = "-") {
     persistOverrides();
     selectedItemKey = "";
     exportBatchButton.disabled = true;
+    exportMissingActionsButton.disabled = true;
     filterPriority.value = "";
     filterCategory.innerHTML = '<option value="">Toutes</option>';
     filterStatus.innerHTML = '<option value="">Tous</option>';
@@ -964,6 +1068,7 @@ function resetBatchVisuals(status = "-") {
     `;
     batchTableBody.innerHTML = '<tr><td colspan="11">Aucun batch lance.</td></tr>';
     caseDetail.innerHTML = '<p class="csv-status">Clique sur une ligne du batch pour afficher le detail du dossier.</p>';
+    missingActionsPanel.innerHTML = '<p class="csv-status">Lance un batch pour afficher les relances pretes a traiter.</p>';
 }
 
 function hydrateCategoryFilter(items) {
@@ -1117,6 +1222,23 @@ function handleBatchRowClick(event) {
     highlightSelectedRow();
 }
 
+function handleMissingActionsClick(event) {
+    const button = event.target.closest(".action-copy-button");
+    if (!button) {
+        return;
+    }
+
+    const item = lastBatchItems.find((candidate) => buildItemKey(candidate) === button.dataset.itemKey);
+    if (!item) {
+        return;
+    }
+
+    void copyToClipboard(
+        item.client_request_message || "",
+        `Relance client copiee pour ${item.contract_id || item.customer_id || "dossier"}.`,
+    );
+}
+
 function highlightSelectedRow() {
     const rows = batchTableBody.querySelectorAll("tr[data-item-key]");
     rows.forEach((row) => {
@@ -1204,6 +1326,10 @@ function renderCaseDetail(item) {
         <div>
             <span class="csv-status">Texte de la demande</span>
             <pre class="output">${escapeHtml(item.claim_text || "Texte non disponible.")}</pre>
+        </div>
+        <div>
+            <span class="csv-status">Message client suggere</span>
+            <pre class="output">${escapeHtml(item.client_request_message || "Aucun message genere.")}</pre>
         </div>
     `;
 }

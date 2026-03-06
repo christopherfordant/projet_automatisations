@@ -312,6 +312,9 @@
                 <button type="button" id="export-batch" class="secondary" disabled>
                     Exporter les resultats en CSV
                 </button>
+                <button type="button" id="export-missing-actions" class="secondary" disabled>
+                    Exporter les relances client
+                </button>
             </div>
             <div id="batch-summary" class="batch-summary">
                 <div class="metric">
@@ -370,6 +373,16 @@
             <h2>Dossier detaille</h2>
             <div id="case-detail" class="case-detail">
                 <p class="csv-status">Clique sur une ligne du batch pour afficher le detail du dossier.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Centre d'actions dossiers incomplets</h2>
+            <p class="hint">
+                Regroupe les relances client preparees automatiquement pour les dossiers batch en attente d'informations.
+            </p>
+            <div id="missing-actions-panel" class="case-detail">
+                <p class="csv-status">Lance un batch pour afficher les relances pretes a traiter.</p>
             </div>
         </section>
 
@@ -490,6 +503,9 @@
                 <div><dt>Sujet</dt><dd>-</dd></div>
             </dl>
             <pre id="document-request-message" class="output">Le message client apparaitra ici.</pre>
+            <div class="actions">
+                <button type="button" id="copy-document-message" class="secondary">Copier le message</button>
+            </div>
         </section>
 
         <section class="card">

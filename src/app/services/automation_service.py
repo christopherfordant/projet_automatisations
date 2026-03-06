@@ -150,6 +150,12 @@ class AutomationService:
         )
 
         ai_result = await provider.generate(prompt)
+        client_request = self._build_claim_missing_info_message(
+            customer_id=resolved_customer_id,
+            contract_id=resolved_contract_id,
+            missing_information=missing_information,
+            category_label=self.CATEGORY_LABELS.get(category, category),
+        )
         result = {
             "module": "claims_intake",
             "customer_id": resolved_customer_id,
@@ -162,6 +168,8 @@ class AutomationService:
             "attention_score": attention_score,
             "recommended_next_action": next_action,
             "documents_received": payload.attached_documents,
+            "client_request_subject": client_request["subject"],
+            "client_request_message": client_request["message"],
             "operator_summary": ai_result["content"],
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
@@ -651,6 +659,39 @@ class AutomationService:
                 else f"Pieces manquantes pour votre dossier - {reference}"
             ),
             "message": intro_by_tone.get(tone, intro_by_tone["neutral"]) + missing_lines + outro,
+        }
+
+    @classmethod
+    def _build_claim_missing_info_message(
+        cls,
+        customer_id: str | None,
+        contract_id: str | None,
+        missing_information: list[str],
+        category_label: str,
+    ) -> dict[str, str]:
+        reference = contract_id or customer_id or "votre dossier"
+        missing_labels = [cls.MISSING_INFO_LABELS.get(item, item) for item in missing_information]
+        if not missing_labels:
+            return {
+                "subject": f"Dossier complet - {reference}",
+                "message": (
+                    "Bonjour,\n\n"
+                    f"Votre dossier {reference} relatif a {category_label.lower()} peut maintenant etre instruit.\n\n"
+                    "Cordialement,\nService gestion"
+                ),
+            }
+
+        bullet_list = "\n".join(f"- {label}" for label in missing_labels)
+        return {
+            "subject": f"Informations manquantes pour votre dossier - {reference}",
+            "message": (
+                "Bonjour,\n\n"
+                f"Pour poursuivre le traitement de votre dossier {reference} relatif a {category_label.lower()}, "
+                "merci de nous transmettre les elements suivants :\n"
+                f"{bullet_list}\n\n"
+                "Le dossier restera en attente jusqu'a reception de ces informations.\n\n"
+                "Cordialement,\nService gestion"
+            ),
         }
 
     @staticmethod

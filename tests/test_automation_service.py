@@ -64,6 +64,26 @@ def test_claims_intake_batch_marks_duplicate_cases() -> None:
     assert all("Possible doublon batch" in item["friction_flag_labels"] for item in result["items"])
 
 
+def test_claims_intake_missing_info_generates_client_message() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_claims_intake(
+            ClaimIntakeRequest(
+                channel="email",
+                customer_id="CL-8122",
+                claim_text="Bonjour, je souhaite un remboursement de facture.",
+                attached_documents=[],
+                provider="mock",
+            )
+        )
+    )
+
+    assert "Informations manquantes" in result["client_request_subject"]
+    assert "Numero dossier" in result["client_request_message"]
+    assert "Copie de facture" in result["client_request_message"]
+
+
 def test_document_completeness_returns_missing_required_documents() -> None:
     service = AutomationService()
 

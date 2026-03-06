@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+email,CL-1012,,"Bonjour, client CL-1012, je relance mon remboursement de facture qui reste en attente.",,mock
+

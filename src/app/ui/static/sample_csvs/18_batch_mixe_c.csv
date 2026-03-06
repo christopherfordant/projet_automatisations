@@ -1,0 +1,5 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+telephone,CL-1022,DOS-9022,"Bonjour, client CL-1022, dossier DOS-9022, dossier bloque, merci d'intervenir immediatement.",,mock
+email,CL-1023,DOS-9023,"Bonjour, client CL-1023, dossier DOS-9023, question generale sur mon dossier.",,mock
+courrier,CL-1024,DOS-9024,"Bonjour, client CL-1024, dossier DOS-9024, demande de prise en charge pour soins.","devis chirurgie",mock
+

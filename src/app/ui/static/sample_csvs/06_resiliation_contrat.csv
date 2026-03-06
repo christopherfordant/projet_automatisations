@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+telephone,CL-1006,DOS-9006,"Bonjour, client CL-1006, dossier DOS-9006, je veux demander la resiliation de mon contrat a partir du mois prochain.",,mock
+

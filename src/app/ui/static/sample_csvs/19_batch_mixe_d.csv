@@ -1,0 +1,5 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+email,CL-1025,DOS-9025,"Bonjour, client CL-1025, dossier DOS-9025, remboursement en retard de facture.",,mock
+telephone,CL-1026,DOS-9026,"Bonjour, client CL-1026, dossier DOS-9026, je souhaite faire une reclamation.",,mock
+portail,CL-1027,DOS-9027,"Bonjour, client CL-1027, dossier DOS-9027, je veux modifier mon contrat.",,mock
+

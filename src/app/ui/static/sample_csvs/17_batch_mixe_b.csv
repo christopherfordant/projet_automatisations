@@ -1,0 +1,5 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+courrier,CL-1019,DOS-9019,"Bonjour, client CL-1019, dossier DOS-9019, je formule une reclamation apres plusieurs relances.",,mock
+email,,,"Bonjour, client CL-1020, dossier DOS-9020, remboursement urgent de facture.","facture kine",mock
+portail,CL-1021,DOS-9021,"Bonjour, client CL-1021, dossier DOS-9021, suivi de feuille de soin.","feuille de soin",mock
+

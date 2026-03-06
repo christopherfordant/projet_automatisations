@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+portail,CL-1003,DOS-9003,"Bonjour, client CL-1003, dossier DOS-9003, je souhaite savoir si mon devis optique sera pris en charge.","devis optique",mock
+

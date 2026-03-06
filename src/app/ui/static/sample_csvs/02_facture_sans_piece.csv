@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+email,CL-1002,DOS-9002,"Bonjour, client CL-1002, dossier DOS-9002, je demande le remboursement d'une facture d'optique.",,mock
+

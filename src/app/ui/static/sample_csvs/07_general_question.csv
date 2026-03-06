@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+email,CL-1007,DOS-9007,"Bonjour, client CL-1007, dossier DOS-9007, je souhaite connaitre l'etat d'avancement de mon dossier.",,mock
+

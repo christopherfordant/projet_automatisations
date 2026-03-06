@@ -1,0 +1,5 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+email,,,"Bonjour, adherent CL-1028, reference dossier DOS-9028, relance urgente pour remboursement de facture.","facture pharmacie",mock
+portail,CL-1029,DOS-9029,"Bonjour, client CL-1029, dossier DOS-9029, suivi de devis hospitalisation.",,mock
+courrier,CL-1030,DOS-9030,"Bonjour, client CL-1030, dossier DOS-9030, demande generale d'information.",,mock
+

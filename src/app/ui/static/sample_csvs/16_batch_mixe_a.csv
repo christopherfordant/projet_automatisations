@@ -1,0 +1,5 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+email,CL-1016,DOS-9016,"Bonjour, client CL-1016, dossier DOS-9016, je relance un remboursement de facture.",,mock
+portail,CL-1017,DOS-9017,"Bonjour, client CL-1017, dossier DOS-9017, question sur mon devis optique.","devis optique",mock
+telephone,CL-1018,DOS-9018,"Bonjour, client CL-1018, dossier DOS-9018, je veux resilier mon contrat.",,mock
+

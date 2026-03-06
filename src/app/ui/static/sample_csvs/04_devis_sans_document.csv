@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+portail,CL-1004,DOS-9004,"Bonjour, client CL-1004, dossier DOS-9004, j'ai une question sur un devis hospitalisation.",,mock
+

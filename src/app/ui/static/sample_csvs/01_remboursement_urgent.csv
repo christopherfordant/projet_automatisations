@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+email,CL-1001,DOS-9001,"Bonjour, client CL-1001, dossier DOS-9001, je relance en urgence le remboursement de ma facture dentaire.","facture dentaire",mock
+

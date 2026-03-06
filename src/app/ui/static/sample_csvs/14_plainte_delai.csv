@@ -1,0 +1,3 @@
+channel,customer_id,contract_id,claim_text,attached_documents,provider
+telephone,CL-1014,DOS-9014,"Bonjour, client CL-1014, dossier DOS-9014, je depose une plainte car les delais de traitement sont anormalement longs.",,mock
+

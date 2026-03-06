@@ -7,6 +7,7 @@ const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
 const batchTableBody = document.getElementById("batch-table-body");
+const caseDetail = document.getElementById("case-detail");
 const exportBatchButton = document.getElementById("export-batch");
 const filterPriority = document.getElementById("filter-priority");
 const filterCategory = document.getElementById("filter-category");
@@ -28,6 +29,7 @@ let csvRows = [];
 let lastBatchItems = [];
 let manualStatusOverrides = {};
 let actionLogEntries = [];
+let selectedItemKey = "";
 const STORAGE_KEYS = {
     overrides: "mutuelle_ai_platform.manual_status_overrides",
     actionLog: "mutuelle_ai_platform.action_log_entries",
@@ -58,6 +60,7 @@ filterStatus.addEventListener("change", applyBatchFilters);
 filterSearch.addEventListener("input", applyBatchFilters);
 filterMissingOnly.addEventListener("change", applyBatchFilters);
 batchTableBody.addEventListener("change", handleStatusOverrideChange);
+batchTableBody.addEventListener("click", handleBatchRowClick);
 clearLogButton.addEventListener("click", clearActionLog);
 csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
@@ -181,6 +184,11 @@ async function runBatchAnalysis() {
         exportBatchButton.disabled = data.items.length === 0;
         batchOutput.textContent = JSON.stringify(data, null, 2);
         applyBatchFilters();
+        if (data.items[0]) {
+            selectedItemKey = buildItemKey(data.items[0]);
+            renderCaseDetail(data.items[0]);
+            highlightSelectedRow();
+        }
         addLogEntry({
             action: "Batch lance",
             source: `${csvRows.length} ligne(s)`,
@@ -557,6 +565,7 @@ function renderBatchTable(items) {
             `;
         })
         .join("");
+    highlightSelectedRow();
 }
 
 function findSourceLabel(item) {
@@ -575,6 +584,7 @@ function resetBatchVisuals(status = "-") {
     lastBatchItems = [];
     manualStatusOverrides = {};
     persistOverrides();
+    selectedItemKey = "";
     exportBatchButton.disabled = true;
     filterPriority.value = "";
     filterCategory.innerHTML = '<option value="">Toutes</option>';
@@ -597,6 +607,7 @@ function resetBatchVisuals(status = "-") {
         </div>
     `;
     batchTableBody.innerHTML = '<tr><td colspan="9">Aucun batch lance.</td></tr>';
+    caseDetail.innerHTML = '<p class="csv-status">Clique sur une ligne du batch pour afficher le detail du dossier.</p>';
 }
 
 function hydrateCategoryFilter(items) {
@@ -687,6 +698,10 @@ function handleStatusOverrideChange(event) {
 
     renderBatchTable(lastBatchItems);
     applyBatchFilters();
+    const updatedItem = lastBatchItems.find((item) => buildItemKey(item) === itemKey);
+    if (updatedItem && selectedItemKey === itemKey) {
+        renderCaseDetail(updatedItem);
+    }
     addLogEntry({
         action: value ? "Statut modifie" : "Statut reinitialise",
         source: findSourceLabel(
@@ -717,6 +732,94 @@ function buildItemKey(item) {
         item.contract_id || "",
         item.claim_text || "",
     ].join("::");
+}
+
+function handleBatchRowClick(event) {
+    if (event.target.closest(".status-select")) {
+        return;
+    }
+
+    const row = event.target.closest("tr[data-item-key]");
+    if (!row) {
+        return;
+    }
+
+    selectedItemKey = row.dataset.itemKey;
+    const item = lastBatchItems.find((candidate) => buildItemKey(candidate) === selectedItemKey);
+    if (!item) {
+        return;
+    }
+
+    renderCaseDetail(item);
+    highlightSelectedRow();
+}
+
+function highlightSelectedRow() {
+    const rows = batchTableBody.querySelectorAll("tr[data-item-key]");
+    rows.forEach((row) => {
+        row.classList.toggle("is-selected", row.dataset.itemKey === selectedItemKey);
+    });
+}
+
+function renderCaseDetail(item) {
+    const override = manualStatusOverrides[buildItemKey(item)];
+    const shownStatusValue = override?.value || item.business_status;
+    const shownStatusLabel = override?.label || item.business_status_label;
+    const documents = item.documents_received?.length
+        ? item.documents_received.join(", ")
+        : "Aucune piece declaree";
+    const missing = item.missing_information_labels?.length
+        ? item.missing_information_labels.join(", ")
+        : "Aucune";
+
+    caseDetail.innerHTML = `
+        <div class="case-detail-grid">
+            <div class="case-detail-item">
+                <span>Source</span>
+                <strong>${escapeHtml(findSourceLabel(item))}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Client</span>
+                <strong>${escapeHtml(item.customer_id || "-")}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Dossier</span>
+                <strong>${escapeHtml(item.contract_id || "-")}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Categorie</span>
+                <strong>${escapeHtml(item.category_label)}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Priorite</span>
+                <strong><span class="badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority_label)}</span></strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Statut effectif</span>
+                <strong><span class="badge ${escapeHtml(shownStatusValue)}">${escapeHtml(shownStatusLabel)}</span></strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Action recommandee</span>
+                <strong>${escapeHtml(item.recommended_next_action_label)}</strong>
+            </div>
+            <div class="case-detail-item">
+                <span>Informations manquantes</span>
+                <strong>${escapeHtml(missing)}</strong>
+            </div>
+        </div>
+        <div>
+            <span class="csv-status">Pieces jointes</span>
+            <pre class="output">${escapeHtml(documents)}</pre>
+        </div>
+        <div>
+            <span class="csv-status">Resume operateur</span>
+            <pre class="output">${escapeHtml(item.operator_summary || "Aucun resume disponible.")}</pre>
+        </div>
+        <div>
+            <span class="csv-status">Texte de la demande</span>
+            <pre class="output">${escapeHtml(item.claim_text || "Texte non disponible.")}</pre>
+        </div>
+    `;
 }
 
 function addLogEntry({ action, source, caseRef, detail }) {

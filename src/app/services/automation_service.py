@@ -109,6 +109,7 @@ class AutomationService:
             "module": "claims_intake",
             "customer_id": resolved_customer_id,
             "contract_id": resolved_contract_id,
+            "claim_text": payload.claim_text,
             "category": category,
             "priority": priority,
             "missing_information": missing_information,

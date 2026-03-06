@@ -25,6 +25,7 @@ class DocumentCompletenessRequest(BaseModel):
     document_text: str = Field(..., description="Texte libre ou contexte du dossier")
     attached_documents: list[str] = Field(default_factory=list, description="Pieces deja declarees")
     message_tone: str = Field(default="neutral", description="Ton du message client a generer")
+    output_channel: str = Field(default="email", description="Canal de sortie du message client")
     provider: str | None = Field(default=None, description="Provider IA a utiliser")
 
 

@@ -76,6 +76,7 @@ def test_document_completeness_returns_missing_required_documents() -> None:
                 document_text="Bonjour, je transmets mon devis optique avec mon numero adherent pour etude.",
                 attached_documents=["devis optique", "numero adherent"],
                 message_tone="direct",
+                output_channel="sms",
                 provider="mock",
             )
         )
@@ -84,9 +85,9 @@ def test_document_completeness_returns_missing_required_documents() -> None:
     assert result["document_type_label"] == "Devis optique"
     assert result["readiness_status"] == "partial"
     assert "Ordonnance" in result["missing_required_labels"]
-    assert "Pieces manquantes" in result["client_request_subject"]
-    assert "- Ordonnance" in result["client_request_message"]
-    assert "ne peut pas etre traite en l'etat" in result["client_request_message"]
+    assert result["client_request_subject"] == ""
+    assert "Ordonnance" in result["client_request_message"]
+    assert "dossier finalisable" in result["client_request_message"]
 
 
 def test_document_completeness_can_be_ready() -> None:
@@ -104,6 +105,7 @@ def test_document_completeness_can_be_ready() -> None:
                 ),
                 attached_documents=["facture", "numero adherent", "reference dossier"],
                 message_tone="commercial",
+                output_channel="courrier",
                 provider="mock",
             )
         )
@@ -114,3 +116,4 @@ def test_document_completeness_can_be_ready() -> None:
     assert result["missing_required_labels"] == []
     assert "Dossier complet" in result["client_request_subject"]
     assert "merci pour votre envoi" in result["client_request_message"].lower()
+    assert "salutations distinguees" in result["client_request_message"].lower()

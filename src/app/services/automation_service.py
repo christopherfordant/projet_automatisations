@@ -286,6 +286,7 @@ class AutomationService:
             missing_required_labels=[item.title() for item in missing_required],
             readiness_status=readiness_status,
             message_tone=payload.message_tone,
+            output_channel=payload.output_channel,
         )
 
         return {
@@ -302,6 +303,7 @@ class AutomationService:
             "readiness_status": readiness_status,
             "readiness_status_label": self._format_readiness_status(readiness_status),
             "message_tone": payload.message_tone,
+            "output_channel": payload.output_channel,
             "client_request_subject": request_message["subject"],
             "client_request_message": request_message["message"],
             "operator_summary": ai_result["content"],
@@ -550,14 +552,38 @@ class AutomationService:
         missing_required_labels: list[str],
         readiness_status: str,
         message_tone: str,
+        output_channel: str,
     ) -> dict[str, str]:
         reference = contract_id or customer_id or "votre dossier"
         tone = message_tone.lower()
+        channel = output_channel.lower()
+        if channel == "sms":
+            if not missing_required_labels:
+                return {
+                    "subject": "",
+                    "message": (
+                        f"Dossier {reference} complet pour {profile_label.lower()}. "
+                        "Instruction en cours."
+                    ),
+                }
+            return {
+                "subject": "",
+                "message": (
+                    f"Dossier {reference}: merci d'envoyer "
+                    f"{', '.join(missing_required_labels)}. "
+                    f"{'Sans ces pieces, dossier bloque.' if readiness_status == 'blocked' else 'A reception, dossier finalisable.'}"
+                ),
+            }
+
         if not missing_required_labels:
             openings = {
                 "neutral": "Bonjour,",
                 "commercial": "Bonjour, merci pour votre envoi,",
                 "direct": "Bonjour,",
+            }
+            closings = {
+                "email": "Cordialement,\nService gestion",
+                "courrier": "Veuillez agreer nos salutations distinguees.\nService gestion",
             }
             progress_lines = {
                 "neutral": "Nos equipes peuvent poursuivre l'instruction.",
@@ -571,7 +597,7 @@ class AutomationService:
                     f"Votre dossier {reference} est considere comme complet pour le traitement "
                     f"de la demande de type {profile_label.lower()}.\n"
                     f"{progress_lines.get(tone, progress_lines['neutral'])}\n\n"
-                    "Cordialement,\nService gestion"
+                    f"{closings.get(channel, closings['email'])}"
                 ),
             }
 
@@ -612,9 +638,18 @@ class AutomationService:
                 "direct": "A reception, le dossier pourra etre finalise.\n",
             }
             outro += partial_line.get(tone, partial_line["neutral"])
-        outro += "\nCordialement,\nService gestion"
+        outro += "\n"
+        outro += (
+            "Veuillez agreer nos salutations distinguees.\nService gestion"
+            if channel == "courrier"
+            else "Cordialement,\nService gestion"
+        )
         return {
-            "subject": f"Pieces manquantes pour votre dossier - {reference}",
+            "subject": (
+                ""
+                if channel == "sms"
+                else f"Pieces manquantes pour votre dossier - {reference}"
+            ),
             "message": intro_by_tone.get(tone, intro_by_tone["neutral"]) + missing_lines + outro,
         }
 

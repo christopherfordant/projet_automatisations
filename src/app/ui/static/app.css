@@ -309,8 +309,51 @@ dd {
 
 .batch-toolbar {
     display: flex;
-    justify-content: flex-end;
+    gap: 16px;
+    align-items: end;
+    justify-content: space-between;
+    flex-wrap: wrap;
     margin-bottom: 14px;
+}
+
+.batch-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    flex: 1 1 680px;
+}
+
+.batch-filters label {
+    font: 600 0.86rem/1.3 "Segoe UI", sans-serif;
+}
+
+.checkbox-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 28px;
+}
+
+.checkbox-filter input {
+    width: auto;
+    margin: 0;
+}
+
+.batch-toolbar button {
+    flex: 0 0 auto;
+}
+
+.batch-empty {
+    color: var(--muted);
+    font-style: italic;
+}
+
+.batch-row-hidden {
+    display: none;
+}
+
+.batch-toolbar {
+    justify-content: flex-end;
 }
 
 button:disabled {

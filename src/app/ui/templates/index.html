@@ -172,6 +172,31 @@
         <section class="card">
             <h2>Resultats batch CSV</h2>
             <div class="batch-toolbar">
+                <div class="batch-filters">
+                    <label>
+                        Priorite
+                        <select id="filter-priority">
+                            <option value="">Toutes</option>
+                            <option value="high">Haute</option>
+                            <option value="medium">Moyenne</option>
+                            <option value="normal">Normale</option>
+                        </select>
+                    </label>
+                    <label>
+                        Categorie
+                        <select id="filter-category">
+                            <option value="">Toutes</option>
+                        </select>
+                    </label>
+                    <label>
+                        Recherche
+                        <input type="text" id="filter-search" placeholder="Client, dossier, source">
+                    </label>
+                    <label class="checkbox-filter">
+                        <input type="checkbox" id="filter-missing-only">
+                        Dossiers incomplets uniquement
+                    </label>
+                </div>
                 <button type="button" id="export-batch" class="secondary" disabled>
                     Exporter les resultats en CSV
                 </button>
@@ -210,6 +235,7 @@
                     </tbody>
                 </table>
             </div>
+            <p id="batch-filter-status" class="csv-status">Aucun filtre actif.</p>
             <details class="batch-details">
                 <summary>Voir le detail technique JSON</summary>
                 <pre id="batch-output" class="output">Aucun batch lance.</pre>

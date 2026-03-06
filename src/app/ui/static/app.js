@@ -8,6 +8,11 @@ const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
 const batchTableBody = document.getElementById("batch-table-body");
 const exportBatchButton = document.getElementById("export-batch");
+const filterPriority = document.getElementById("filter-priority");
+const filterCategory = document.getElementById("filter-category");
+const filterSearch = document.getElementById("filter-search");
+const filterMissingOnly = document.getElementById("filter-missing-only");
+const batchFilterStatus = document.getElementById("batch-filter-status");
 const claimText = form.claim_text;
 const csvFileInput = document.getElementById("csv-file");
 const csvRowSelect = document.getElementById("csv-row-select");
@@ -35,6 +40,10 @@ csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
 runBatchButton.addEventListener("click", runBatchAnalysis);
 exportBatchButton.addEventListener("click", exportBatchResults);
+filterPriority.addEventListener("change", applyBatchFilters);
+filterCategory.addEventListener("change", applyBatchFilters);
+filterSearch.addEventListener("input", applyBatchFilters);
+filterMissingOnly.addEventListener("change", applyBatchFilters);
 csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
@@ -152,8 +161,10 @@ async function runBatchAnalysis() {
         renderBatchSummary(data.summary);
         renderBatchTable(data.items);
         lastBatchItems = data.items;
+        hydrateCategoryFilter(data.items);
         exportBatchButton.disabled = data.items.length === 0;
         batchOutput.textContent = JSON.stringify(data, null, 2);
+        applyBatchFilters();
     } catch (error) {
         resetBatchVisuals("Erreur");
         batchOutput.textContent = String(error);
@@ -478,7 +489,20 @@ function renderBatchTable(items) {
                 : "Aucune";
 
             return `
-                <tr>
+                <tr
+                    data-priority="${escapeHtml(item.priority)}"
+                    data-category="${escapeHtml(item.category_label)}"
+                    data-missing="${item.missing_information_labels.length > 0 ? "yes" : "no"}"
+                    data-search="${escapeHtml(
+                        [
+                            findSourceLabel(item),
+                            item.customer_id || "",
+                            item.contract_id || "",
+                            item.category_label || "",
+                            item.recommended_next_action_label || "",
+                        ].join(" ").toLowerCase(),
+                    )}"
+                >
                     <td>${escapeHtml(findSourceLabel(item))}</td>
                     <td>${escapeHtml(item.customer_id || "-")}</td>
                     <td>${escapeHtml(item.contract_id || "-")}</td>
@@ -507,6 +531,11 @@ function findSourceLabel(item) {
 function resetBatchVisuals(status = "-") {
     lastBatchItems = [];
     exportBatchButton.disabled = true;
+    filterPriority.value = "";
+    filterCategory.innerHTML = '<option value="">Toutes</option>';
+    filterSearch.value = "";
+    filterMissingOnly.checked = false;
+    batchFilterStatus.textContent = "Aucun filtre actif.";
     batchSummary.innerHTML = `
         <div class="metric">
             <span>Total dossiers</span>
@@ -522,4 +551,45 @@ function resetBatchVisuals(status = "-") {
         </div>
     `;
     batchTableBody.innerHTML = '<tr><td colspan="7">Aucun batch lance.</td></tr>';
+}
+
+function hydrateCategoryFilter(items) {
+    const categories = [...new Set(items.map((item) => item.category_label))].sort();
+    filterCategory.innerHTML = '<option value="">Toutes</option>' +
+        categories
+            .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+            .join("");
+}
+
+function applyBatchFilters() {
+    const rows = Array.from(batchTableBody.querySelectorAll("tr"));
+    if (rows.length === 0 || (rows.length === 1 && rows[0].children.length === 1)) {
+        batchFilterStatus.textContent = "Aucun filtre actif.";
+        return;
+    }
+
+    const selectedPriority = filterPriority.value;
+    const selectedCategory = filterCategory.value;
+    const searchTerm = filterSearch.value.trim().toLowerCase();
+    const missingOnly = filterMissingOnly.checked;
+    let visibleCount = 0;
+
+    rows.forEach((row) => {
+        const matchesPriority = !selectedPriority || row.dataset.priority === selectedPriority;
+        const matchesCategory = !selectedCategory || row.dataset.category === selectedCategory;
+        const matchesMissing = !missingOnly || row.dataset.missing === "yes";
+        const matchesSearch = !searchTerm || row.dataset.search.includes(searchTerm);
+        const isVisible = matchesPriority && matchesCategory && matchesMissing && matchesSearch;
+
+        row.classList.toggle("batch-row-hidden", !isVisible);
+        if (isVisible) {
+            visibleCount += 1;
+        }
+    });
+
+    if (visibleCount === 0) {
+        batchFilterStatus.textContent = "Aucun dossier ne correspond aux filtres.";
+    } else {
+        batchFilterStatus.textContent = `${visibleCount} dossier(s) affiché(s) apres filtrage.`;
+    }
 }

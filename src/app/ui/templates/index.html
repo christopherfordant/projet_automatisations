@@ -145,7 +145,44 @@
 
         <section class="card">
             <h2>Resultats batch CSV</h2>
-            <pre id="batch-output" class="output">Aucun batch lance.</pre>
+            <div id="batch-summary" class="batch-summary">
+                <div class="metric">
+                    <span>Total dossiers</span>
+                    <strong>-</strong>
+                </div>
+                <div class="metric">
+                    <span>Prioritaires</span>
+                    <strong>-</strong>
+                </div>
+                <div class="metric">
+                    <span>Incomplets</span>
+                    <strong>-</strong>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="batch-table">
+                    <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Client</th>
+                            <th>Dossier</th>
+                            <th>Categorie</th>
+                            <th>Priorite</th>
+                            <th>Action</th>
+                            <th>Informations manquantes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batch-table-body">
+                        <tr>
+                            <td colspan="7">Aucun batch lance.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <details class="batch-details">
+                <summary>Voir le detail technique JSON</summary>
+                <pre id="batch-output" class="output">Aucun batch lance.</pre>
+            </details>
         </section>
     </main>
 

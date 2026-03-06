@@ -5,6 +5,8 @@ const missingList = document.getElementById("missing-list");
 const operatorSummary = document.getElementById("operator-summary");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
+const batchSummary = document.getElementById("batch-summary");
+const batchTableBody = document.getElementById("batch-table-body");
 const claimText = form.claim_text;
 const csvFileInput = document.getElementById("csv-file");
 const csvRowSelect = document.getElementById("csv-row-select");
@@ -120,10 +122,12 @@ function renderMissing(items) {
 async function runBatchAnalysis() {
     if (csvRows.length === 0) {
         batchOutput.textContent = "Charge d'abord un CSV pour lancer un batch.";
+        resetBatchVisuals();
         return;
     }
 
     batchOutput.textContent = "Traitement batch en cours...";
+    resetBatchVisuals("Traitement...");
     const payload = {
         items: csvRows.map(convertCsvRowToPayload),
     };
@@ -142,8 +146,11 @@ async function runBatchAnalysis() {
             throw new Error(JSON.stringify(data, null, 2));
         }
 
+        renderBatchSummary(data.summary);
+        renderBatchTable(data.items);
         batchOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
+        resetBatchVisuals("Erreur");
         batchOutput.textContent = String(error);
     }
 }
@@ -365,4 +372,78 @@ function normalizeHeader(header) {
         .toLowerCase()
         .replaceAll(" ", "_")
         .replaceAll("-", "_");
+}
+
+function renderBatchSummary(summaryData) {
+    batchSummary.innerHTML = `
+        <div class="metric">
+            <span>Total dossiers</span>
+            <strong>${escapeHtml(summaryData.total_items)}</strong>
+        </div>
+        <div class="metric">
+            <span>Prioritaires</span>
+            <strong>${escapeHtml(summaryData.high_priority)}</strong>
+        </div>
+        <div class="metric">
+            <span>Incomplets</span>
+            <strong>${escapeHtml(summaryData.missing_information_cases)}</strong>
+        </div>
+    `;
+}
+
+function renderBatchTable(items) {
+    if (!items || items.length === 0) {
+        batchTableBody.innerHTML = '<tr><td colspan="7">Aucun resultat disponible.</td></tr>';
+        return;
+    }
+
+    batchTableBody.innerHTML = items
+        .map((item) => {
+            const missing = item.missing_information_labels.length
+                ? item.missing_information_labels.join(", ")
+                : "Aucune";
+
+            return `
+                <tr>
+                    <td>${escapeHtml(findSourceLabel(item))}</td>
+                    <td>${escapeHtml(item.customer_id || "-")}</td>
+                    <td>${escapeHtml(item.contract_id || "-")}</td>
+                    <td>${escapeHtml(item.category_label)}</td>
+                    <td><span class="badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority_label)}</span></td>
+                    <td>${escapeHtml(item.recommended_next_action_label)}</td>
+                    <td>${escapeHtml(missing)}</td>
+                </tr>
+            `;
+        })
+        .join("");
+}
+
+function findSourceLabel(item) {
+    const row = csvRows.find((candidate) => {
+        const payload = convertCsvRowToPayload(candidate);
+        return (
+            payload.claim_text === item.claim_text &&
+            (payload.customer_id || "") === (item.customer_id || "") &&
+            (payload.contract_id || "") === (item.contract_id || "")
+        );
+    });
+    return row?.source_file || "Formulaire";
+}
+
+function resetBatchVisuals(status = "-") {
+    batchSummary.innerHTML = `
+        <div class="metric">
+            <span>Total dossiers</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+        <div class="metric">
+            <span>Prioritaires</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+        <div class="metric">
+            <span>Incomplets</span>
+            <strong>${escapeHtml(status)}</strong>
+        </div>
+    `;
+    batchTableBody.innerHTML = '<tr><td colspan="7">Aucun batch lance.</td></tr>';
 }

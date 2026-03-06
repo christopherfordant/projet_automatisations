@@ -44,6 +44,9 @@ $env:N8N_HOST = $BindHost
 $env:N8N_PORT = "$Port"
 $env:N8N_USER_FOLDER = $resolvedUserFolder
 $env:N8N_RUNNERS_ENABLED = "false"
+$env:N8N_DIAGNOSTICS_ENABLED = "false"
+$env:N8N_VERSION_NOTIFICATIONS_ENABLED = "false"
+$env:N8N_TEMPLATES_ENABLED = "false"
 
 Write-Host "Demarrage de n8n sur http://$BindHost`:$Port" -ForegroundColor Cyan
 Write-Host "Dossier n8n local: $resolvedUserFolder" -ForegroundColor Green

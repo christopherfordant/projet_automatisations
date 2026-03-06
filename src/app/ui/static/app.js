@@ -4,11 +4,13 @@ const summary = document.getElementById("summary");
 const missingList = document.getElementById("missing-list");
 const operatorSummary = document.getElementById("operator-summary");
 const rawOutput = document.getElementById("raw-output");
+const batchOutput = document.getElementById("batch-output");
 const claimText = form.claim_text;
 const csvFileInput = document.getElementById("csv-file");
 const csvRowSelect = document.getElementById("csv-row-select");
 const csvStatus = document.getElementById("csv-status");
 const csvPreview = document.getElementById("csv-preview");
+const runBatchButton = document.getElementById("run-batch");
 let csvRows = [];
 
 fillExample.addEventListener("click", () => {
@@ -25,6 +27,7 @@ fillExample.addEventListener("click", () => {
 claimText.addEventListener("input", autofillIdentifiers);
 csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
+runBatchButton.addEventListener("click", runBatchAnalysis);
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -68,11 +71,11 @@ form.addEventListener("submit", async (event) => {
 
         setSummary({
             status: "Succes",
-            category: data.category,
-            priority: data.priority,
-            action: data.recommended_next_action,
+            category: data.category_label,
+            priority: data.priority_label,
+            action: data.recommended_next_action_label,
         });
-        renderMissing(data.missing_information);
+        renderMissing(data.missing_information_labels);
         operatorSummary.textContent = data.operator_summary;
         rawOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
@@ -106,6 +109,37 @@ function renderMissing(items) {
     missingList.innerHTML = items
         .map((item) => `<li>${escapeHtml(item)}</li>`)
         .join("");
+}
+
+async function runBatchAnalysis() {
+    if (csvRows.length === 0) {
+        batchOutput.textContent = "Charge d'abord un CSV pour lancer un batch.";
+        return;
+    }
+
+    batchOutput.textContent = "Traitement batch en cours...";
+    const payload = {
+        items: csvRows.map(convertCsvRowToPayload),
+    };
+
+    try {
+        const response = await fetch("/automations/claims-intake/batch", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(JSON.stringify(data, null, 2));
+        }
+
+        batchOutput.textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+        batchOutput.textContent = String(error);
+    }
 }
 
 function escapeHtml(value) {
@@ -178,15 +212,35 @@ function applySelectedCsvRow() {
 }
 
 function applyCsvRow(row) {
-    form.channel.value = normalizeChannel(row.channel);
-    form.customer_id.value = row.customer_id || row.client_id || "";
-    form.contract_id.value =
-        row.contract_id || row.case_id || row.dossier_id || row.claim_id || "";
-    form.provider.value = row.provider || "mock";
-    form.claim_text.value = row.claim_text || row.message || row.description || "";
-    form.attached_documents.value =
-        row.attached_documents || row.documents || row.pieces_jointes || "";
+    const payload = convertCsvRowToPayload(row);
+    form.channel.value = payload.channel;
+    form.customer_id.value = payload.customer_id || "";
+    form.contract_id.value = payload.contract_id || "";
+    form.provider.value = payload.provider;
+    form.claim_text.value = payload.claim_text;
+    form.attached_documents.value = payload.attached_documents.join(", ");
     autofillIdentifiers();
+}
+
+function convertCsvRowToPayload(row) {
+    const attachedDocuments = (
+        row.attached_documents ||
+        row.documents ||
+        row.pieces_jointes ||
+        ""
+    )
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    return {
+        channel: normalizeChannel(row.channel),
+        customer_id: row.customer_id || row.client_id || null,
+        contract_id: row.contract_id || row.case_id || row.dossier_id || row.claim_id || null,
+        provider: row.provider || "mock",
+        claim_text: row.claim_text || row.message || row.description || "",
+        attached_documents: attachedDocuments,
+    };
 }
 
 function normalizeChannel(value) {

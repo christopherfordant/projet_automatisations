@@ -25,3 +25,7 @@ class ClaimIntakeRequest(BaseModel):
     claim_text: str = Field(..., description="Demande ou signalement entrant")
     attached_documents: list[str] = Field(default_factory=list, description="Liste descriptive des pieces")
     provider: str | None = Field(default=None, description="Provider IA a utiliser")
+
+
+class ClaimIntakeBatchRequest(BaseModel):
+    items: list[ClaimIntakeRequest] = Field(..., min_length=1, description="Liste des dossiers a traiter")

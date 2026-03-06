@@ -6,12 +6,42 @@ from app.providers.base import PromptRequest
 from app.providers.registry import get_provider
 from app.schemas.automation import (
     AutomationRequest,
+    ClaimIntakeBatchRequest,
     ClaimIntakeRequest,
     DocumentAnalysisRequest,
 )
 
 
 class AutomationService:
+    CATEGORY_LABELS = {
+        "health_care_request": "Demande de soins",
+        "reimbursement_followup": "Suivi de remboursement",
+        "contract_change": "Changement de contrat",
+        "complaint": "Reclamation",
+        "general_intake": "Demande generale",
+    }
+
+    PRIORITY_LABELS = {
+        "high": "Haute",
+        "medium": "Moyenne",
+        "normal": "Normale",
+    }
+
+    MISSING_INFO_LABELS = {
+        "customer_id": "Numero client",
+        "contract_id": "Numero dossier",
+        "supporting_quote": "Devis justificatif",
+        "invoice_copy": "Copie de facture",
+    }
+
+    ACTION_LABELS = {
+        "request_missing_information": "Demander les informations manquantes",
+        "route_to_complaints_team": "Acheminer vers le service reclamations",
+        "escalate_to_priority_queue": "Passer en file prioritaire",
+        "route_to_reimbursement_queue": "Acheminer vers le traitement remboursement",
+        "route_to_standard_operations": "Acheminer vers les operations standard",
+    }
+
     async def run_intake(self, payload: AutomationRequest) -> dict[str, object]:
         settings = get_settings()
         provider = get_provider(payload.provider)
@@ -68,7 +98,7 @@ class AutomationService:
         )
 
         ai_result = await provider.generate(prompt)
-        return {
+        result = {
             "module": "claims_intake",
             "customer_id": resolved_customer_id,
             "contract_id": resolved_contract_id,
@@ -80,6 +110,30 @@ class AutomationService:
             "operator_summary": ai_result["content"],
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
+        }
+        return self._decorate_result(result)
+
+    async def run_claims_intake_batch(
+        self, payload: ClaimIntakeBatchRequest
+    ) -> dict[str, object]:
+        results: list[dict[str, object]] = []
+        for item in payload.items:
+            results.append(await self.run_claims_intake(item))
+
+        summary = {
+            "total_items": len(results),
+            "high_priority": sum(1 for item in results if item["priority"] == "high"),
+            "missing_information_cases": sum(
+                1 for item in results if item["missing_information"]
+            ),
+            "categories": self._count_by_key(results, "category_label"),
+            "recommended_actions": self._count_by_key(results, "recommended_next_action_label"),
+        }
+
+        return {
+            "module": "claims_intake_batch",
+            "summary": summary,
+            "items": results,
         }
 
     async def run_document_analysis(self, payload: DocumentAnalysisRequest) -> dict[str, object]:
@@ -169,3 +223,25 @@ class AutomationService:
         if category == "reimbursement_followup":
             return "route_to_reimbursement_queue"
         return "route_to_standard_operations"
+
+    @classmethod
+    def _decorate_result(cls, result: dict[str, object]) -> dict[str, object]:
+        missing_information = [
+            cls.MISSING_INFO_LABELS.get(item, item) for item in result["missing_information"]
+        ]
+        result["category_label"] = cls.CATEGORY_LABELS.get(result["category"], result["category"])
+        result["priority_label"] = cls.PRIORITY_LABELS.get(result["priority"], result["priority"])
+        result["missing_information_labels"] = missing_information
+        result["recommended_next_action_label"] = cls.ACTION_LABELS.get(
+            result["recommended_next_action"],
+            result["recommended_next_action"],
+        )
+        return result
+
+    @staticmethod
+    def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for item in items:
+            value = str(item[key])
+            counts[value] = counts.get(value, 0) + 1
+        return counts

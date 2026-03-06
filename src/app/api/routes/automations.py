@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.schemas.automation import (
     AutomationRequest,
+    ClaimIntakeBatchRequest,
     ClaimIntakeRequest,
     DocumentAnalysisRequest,
 )
@@ -20,6 +21,11 @@ async def intake(payload: AutomationRequest) -> dict[str, object]:
 @router.post("/claims-intake")
 async def claims_intake(payload: ClaimIntakeRequest) -> dict[str, object]:
     return await service.run_claims_intake(payload)
+
+
+@router.post("/claims-intake/batch")
+async def claims_intake_batch(payload: ClaimIntakeBatchRequest) -> dict[str, object]:
+    return await service.run_claims_intake_batch(payload)
 
 
 @router.post("/document-analysis")

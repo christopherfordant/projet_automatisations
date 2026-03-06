@@ -180,6 +180,15 @@
                     </select>
                 </label>
 
+                <label>
+                    Ton du message client
+                    <select name="message_tone">
+                        <option value="neutral">Neutre</option>
+                        <option value="commercial">Plus commercial</option>
+                        <option value="direct">Plus direct operateur</option>
+                    </select>
+                </label>
+
                 <label class="full">
                     Description de la demande
                     <span class="hint">Les numeros client et dossier sont detectes automatiquement si le texte contient par exemple `client CL-2048` ou `dossier DOS-7788`.</span>
@@ -449,6 +458,7 @@
             <h2>Message client pret a envoyer</h2>
             <p class="hint">Genere automatiquement a partir des pieces manquantes detectees.</p>
             <dl id="document-request-summary" class="summary">
+                <div><dt>Ton</dt><dd>-</dd></div>
                 <div><dt>Sujet</dt><dd>-</dd></div>
             </dl>
             <pre id="document-request-message" class="output">Le message client apparaitra ici.</pre>

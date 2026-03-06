@@ -75,6 +75,7 @@ def test_document_completeness_returns_missing_required_documents() -> None:
                 contract_id="DOS-7788",
                 document_text="Bonjour, je transmets mon devis optique avec mon numero adherent pour etude.",
                 attached_documents=["devis optique", "numero adherent"],
+                message_tone="direct",
                 provider="mock",
             )
         )
@@ -85,6 +86,7 @@ def test_document_completeness_returns_missing_required_documents() -> None:
     assert "Ordonnance" in result["missing_required_labels"]
     assert "Pieces manquantes" in result["client_request_subject"]
     assert "- Ordonnance" in result["client_request_message"]
+    assert "ne peut pas etre traite en l'etat" in result["client_request_message"]
 
 
 def test_document_completeness_can_be_ready() -> None:
@@ -101,6 +103,7 @@ def test_document_completeness_can_be_ready() -> None:
                     "pour mon remboursement."
                 ),
                 attached_documents=["facture", "numero adherent", "reference dossier"],
+                message_tone="commercial",
                 provider="mock",
             )
         )
@@ -110,3 +113,4 @@ def test_document_completeness_can_be_ready() -> None:
     assert result["completion_ratio"] == 100
     assert result["missing_required_labels"] == []
     assert "Dossier complet" in result["client_request_subject"]
+    assert "merci pour votre envoi" in result["client_request_message"].lower()

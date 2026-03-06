@@ -186,6 +186,7 @@ fillDocumentExample.addEventListener("click", () => {
     documentForm.customer_id.value = "CL-2048";
     documentForm.contract_id.value = "DOS-7788";
     documentForm.provider.value = "mock";
+    documentForm.message_tone.value = "neutral";
     documentForm.document_text.value =
         "Bonjour, client CL-2048, dossier DOS-7788, je transmets une facture et mon numero adherent pour un remboursement en attente.";
     documentForm.attached_documents.value = "facture, numero adherent";
@@ -221,6 +222,7 @@ documentForm.addEventListener("submit", async (event) => {
         customer_id: documentForm.customer_id.value || null,
         contract_id: documentForm.contract_id.value || null,
         provider: documentForm.provider.value,
+        message_tone: documentForm.message_tone.value,
         document_text: documentForm.document_text.value,
         attached_documents: documentForm.attached_documents.value
             .split(",")
@@ -233,7 +235,7 @@ documentForm.addEventListener("submit", async (event) => {
         status: "Analyse...",
         completion: "-",
     });
-    renderDocumentRequestMessage("-", "Generation du message en cours...");
+    renderDocumentRequestMessage(payload.message_tone, "-", "Generation du message en cours...");
     documentMissingList.innerHTML = "<li>Verification en cours...</li>";
     documentPresentList.innerHTML = "<li>Verification en cours...</li>";
     documentOutput.textContent = "Chargement...";
@@ -258,7 +260,7 @@ documentForm.addEventListener("submit", async (event) => {
             completion: `${data.completion_ratio}%`,
         });
         renderDocumentLists(data);
-        renderDocumentRequestMessage(data.client_request_subject, data.client_request_message);
+        renderDocumentRequestMessage(data.message_tone, data.client_request_subject, data.client_request_message);
         documentOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
         setDocumentSummary({
@@ -266,7 +268,7 @@ documentForm.addEventListener("submit", async (event) => {
             status: "Erreur",
             completion: "-",
         });
-        renderDocumentRequestMessage("-", "Impossible de generer le message client.");
+        renderDocumentRequestMessage(payload.message_tone, "-", "Impossible de generer le message client.");
         documentMissingList.innerHTML = "<li>La verification a echoue.</li>";
         documentPresentList.innerHTML = "<li>Aucun resultat.</li>";
         documentOutput.textContent = String(error);
@@ -789,8 +791,14 @@ function setDocumentSummary({ type, status, completion }) {
     `;
 }
 
-function renderDocumentRequestMessage(subject, message) {
+function renderDocumentRequestMessage(tone, subject, message) {
+    const toneLabel = {
+        neutral: "Neutre",
+        commercial: "Plus commercial",
+        direct: "Plus direct operateur",
+    }[tone] || tone || "-";
     documentRequestSummary.innerHTML = `
+        <div><dt>Ton</dt><dd>${escapeHtml(toneLabel)}</dd></div>
         <div><dt>Sujet</dt><dd>${escapeHtml(subject || "-")}</dd></div>
     `;
     documentRequestMessage.textContent = message || "Le message client apparaitra ici.";

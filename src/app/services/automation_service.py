@@ -285,6 +285,7 @@ class AutomationService:
             contract_id=payload.contract_id,
             missing_required_labels=[item.title() for item in missing_required],
             readiness_status=readiness_status,
+            message_tone=payload.message_tone,
         )
 
         return {
@@ -300,6 +301,7 @@ class AutomationService:
             "completion_ratio": completion_ratio,
             "readiness_status": readiness_status,
             "readiness_status_label": self._format_readiness_status(readiness_status),
+            "message_tone": payload.message_tone,
             "client_request_subject": request_message["subject"],
             "client_request_message": request_message["message"],
             "operator_summary": ai_result["content"],
@@ -547,37 +549,73 @@ class AutomationService:
         contract_id: str | None,
         missing_required_labels: list[str],
         readiness_status: str,
+        message_tone: str,
     ) -> dict[str, str]:
         reference = contract_id or customer_id or "votre dossier"
+        tone = message_tone.lower()
         if not missing_required_labels:
+            openings = {
+                "neutral": "Bonjour,",
+                "commercial": "Bonjour, merci pour votre envoi,",
+                "direct": "Bonjour,",
+            }
+            progress_lines = {
+                "neutral": "Nos equipes peuvent poursuivre l'instruction.",
+                "commercial": "Nos equipes vont pouvoir poursuivre le traitement dans les meilleures conditions.",
+                "direct": "Le dossier peut maintenant etre instruit.",
+            }
             return {
                 "subject": f"Dossier complet - {reference}",
                 "message": (
-                    "Bonjour,\n\n"
+                    f"{openings.get(tone, openings['neutral'])}\n\n"
                     f"Votre dossier {reference} est considere comme complet pour le traitement "
                     f"de la demande de type {profile_label.lower()}.\n"
-                    "Nos equipes peuvent poursuivre l'instruction.\n\n"
+                    f"{progress_lines.get(tone, progress_lines['neutral'])}\n\n"
                     "Cordialement,\nService gestion"
                 ),
             }
 
-        intro = (
-            "Bonjour,\n\n"
-            f"Pour poursuivre le traitement de votre dossier {reference} "
-            f"concernant {profile_label.lower()}, nous avons encore besoin des elements suivants :\n"
-        )
+        intro_by_tone = {
+            "neutral": (
+                "Bonjour,\n\n"
+                f"Pour poursuivre le traitement de votre dossier {reference} "
+                f"concernant {profile_label.lower()}, nous avons encore besoin des elements suivants :\n"
+            ),
+            "commercial": (
+                "Bonjour,\n\n"
+                f"Afin de finaliser au plus vite le traitement de votre dossier {reference} "
+                f"concernant {profile_label.lower()}, pouvez-vous nous transmettre les elements suivants :\n"
+            ),
+            "direct": (
+                "Bonjour,\n\n"
+                f"Le dossier {reference} ne peut pas etre traite en l'etat. Merci d'envoyer :\n"
+            ),
+        }
         missing_lines = "\n".join(f"- {item}" for item in missing_required_labels)
-        outro = (
-            "\n\nMerci de nous transmettre ces documents via votre espace client ou par retour de message.\n"
-        )
+        outro_by_tone = {
+            "neutral": "\n\nMerci de nous transmettre ces documents via votre espace client ou par retour de message.\n",
+            "commercial": "\n\nVous pouvez nous adresser ces documents via votre espace client ou en reponse a ce message.\n",
+            "direct": "\n\nCes documents doivent etre transmis via votre espace client ou par retour de message.\n",
+        }
+        outro = outro_by_tone.get(tone, outro_by_tone["neutral"])
         if readiness_status == "blocked":
-            outro += "Le dossier reste en attente tant que ces pieces ne sont pas recues.\n"
+            blocked_line = {
+                "neutral": "Le dossier reste en attente tant que ces pieces ne sont pas recues.\n",
+                "commercial": "Le dossier restera en attente jusqu'a reception de ces pieces.\n",
+                "direct": "Sans ces pieces, le dossier restera bloque.\n",
+            }
+            outro += blocked_line.get(tone, blocked_line["neutral"])
         else:
-            outro += "Une fois ces pieces recues, nous pourrons finaliser l'instruction.\n"
+            partial_line = {
+                "neutral": "Une fois ces pieces recues, nous pourrons finaliser l'instruction.\n",
+                "commercial": "Des reception, nous pourrons finaliser l'instruction de votre dossier.\n",
+                "direct": "A reception, le dossier pourra etre finalise.\n",
+            }
+            outro += partial_line.get(tone, partial_line["neutral"])
         outro += "\nCordialement,\nService gestion"
         return {
             "subject": f"Pieces manquantes pour votre dossier - {reference}",
-            "message": intro + missing_lines + outro,
+            "message": intro_by_tone.get(tone, intro_by_tone["neutral"]) + missing_lines + outro,
         }
 
     @staticmethod

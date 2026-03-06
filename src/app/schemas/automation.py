@@ -24,6 +24,7 @@ class DocumentCompletenessRequest(BaseModel):
     contract_id: str | None = Field(default=None, description="Reference dossier si connue")
     document_text: str = Field(..., description="Texte libre ou contexte du dossier")
     attached_documents: list[str] = Field(default_factory=list, description="Pieces deja declarees")
+    message_tone: str = Field(default="neutral", description="Ton du message client a generer")
     provider: str | None = Field(default=None, description="Provider IA a utiliser")
 
 

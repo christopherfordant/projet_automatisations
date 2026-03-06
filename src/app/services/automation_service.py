@@ -42,6 +42,13 @@ class AutomationService:
         "route_to_standard_operations": "Acheminer vers les operations standard",
     }
 
+    BUSINESS_STATUS_LABELS = {
+        "blocked": "Bloque",
+        "to_review": "A revoir",
+        "ready_to_route": "Pret a router",
+        "ready_for_priority_queue": "Pret pour file prioritaire",
+    }
+
     async def run_intake(self, payload: AutomationRequest) -> dict[str, object]:
         settings = get_settings()
         provider = get_provider(payload.provider)
@@ -128,6 +135,7 @@ class AutomationService:
             ),
             "categories": self._count_by_key(results, "category_label"),
             "recommended_actions": self._count_by_key(results, "recommended_next_action_label"),
+            "business_statuses": self._count_by_key(results, "business_status_label"),
         }
 
         return {
@@ -236,7 +244,30 @@ class AutomationService:
             result["recommended_next_action"],
             result["recommended_next_action"],
         )
+        result["business_status"] = cls._derive_business_status(
+            result["priority"],
+            result["missing_information"],
+            result["category"],
+        )
+        result["business_status_label"] = cls.BUSINESS_STATUS_LABELS.get(
+            result["business_status"],
+            result["business_status"],
+        )
         return result
+
+    @staticmethod
+    def _derive_business_status(
+        priority: str,
+        missing_information: list[str],
+        category: str,
+    ) -> str:
+        if missing_information:
+            return "blocked"
+        if category == "complaint":
+            return "to_review"
+        if priority == "high":
+            return "ready_for_priority_queue"
+        return "ready_to_route"
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

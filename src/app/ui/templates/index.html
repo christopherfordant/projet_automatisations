@@ -189,6 +189,12 @@
                         </select>
                     </label>
                     <label>
+                        Statut metier
+                        <select id="filter-status">
+                            <option value="">Tous</option>
+                        </select>
+                    </label>
+                    <label>
                         Recherche
                         <input type="text" id="filter-search" placeholder="Client, dossier, source">
                     </label>
@@ -224,13 +230,14 @@
                             <th>Dossier</th>
                             <th>Categorie</th>
                             <th>Priorite</th>
+                            <th>Statut metier</th>
                             <th>Action</th>
                             <th>Informations manquantes</th>
                         </tr>
                     </thead>
                     <tbody id="batch-table-body">
                         <tr>
-                            <td colspan="7">Aucun batch lance.</td>
+                            <td colspan="8">Aucun batch lance.</td>
                         </tr>
                     </tbody>
                 </table>

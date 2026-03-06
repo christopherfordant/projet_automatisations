@@ -10,6 +10,7 @@ const batchTableBody = document.getElementById("batch-table-body");
 const exportBatchButton = document.getElementById("export-batch");
 const filterPriority = document.getElementById("filter-priority");
 const filterCategory = document.getElementById("filter-category");
+const filterStatus = document.getElementById("filter-status");
 const filterSearch = document.getElementById("filter-search");
 const filterMissingOnly = document.getElementById("filter-missing-only");
 const batchFilterStatus = document.getElementById("batch-filter-status");
@@ -42,6 +43,7 @@ runBatchButton.addEventListener("click", runBatchAnalysis);
 exportBatchButton.addEventListener("click", exportBatchResults);
 filterPriority.addEventListener("change", applyBatchFilters);
 filterCategory.addEventListener("change", applyBatchFilters);
+filterStatus.addEventListener("change", applyBatchFilters);
 filterSearch.addEventListener("input", applyBatchFilters);
 filterMissingOnly.addEventListener("change", applyBatchFilters);
 csvDropzone.addEventListener("dragenter", activateDropzone);
@@ -162,6 +164,7 @@ async function runBatchAnalysis() {
         renderBatchTable(data.items);
         lastBatchItems = data.items;
         hydrateCategoryFilter(data.items);
+        hydrateStatusFilter(data.items);
         exportBatchButton.disabled = data.items.length === 0;
         batchOutput.textContent = JSON.stringify(data, null, 2);
         applyBatchFilters();
@@ -403,6 +406,8 @@ function exportBatchResults() {
         "category_label",
         "priority",
         "priority_label",
+        "business_status",
+        "business_status_label",
         "recommended_next_action",
         "recommended_next_action_label",
         "missing_information",
@@ -423,6 +428,8 @@ function exportBatchResults() {
             item.category_label || "",
             item.priority || "",
             item.priority_label || "",
+            item.business_status || "",
+            item.business_status_label || "",
             item.recommended_next_action || "",
             item.recommended_next_action_label || "",
             (item.missing_information || []).join(" | "),
@@ -478,7 +485,7 @@ function renderBatchSummary(summaryData) {
 
 function renderBatchTable(items) {
     if (!items || items.length === 0) {
-        batchTableBody.innerHTML = '<tr><td colspan="7">Aucun resultat disponible.</td></tr>';
+        batchTableBody.innerHTML = '<tr><td colspan="8">Aucun resultat disponible.</td></tr>';
         return;
     }
 
@@ -492,6 +499,7 @@ function renderBatchTable(items) {
                 <tr
                     data-priority="${escapeHtml(item.priority)}"
                     data-category="${escapeHtml(item.category_label)}"
+                    data-status="${escapeHtml(item.business_status_label)}"
                     data-missing="${item.missing_information_labels.length > 0 ? "yes" : "no"}"
                     data-search="${escapeHtml(
                         [
@@ -499,6 +507,7 @@ function renderBatchTable(items) {
                             item.customer_id || "",
                             item.contract_id || "",
                             item.category_label || "",
+                            item.business_status_label || "",
                             item.recommended_next_action_label || "",
                         ].join(" ").toLowerCase(),
                     )}"
@@ -508,6 +517,7 @@ function renderBatchTable(items) {
                     <td>${escapeHtml(item.contract_id || "-")}</td>
                     <td>${escapeHtml(item.category_label)}</td>
                     <td><span class="badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority_label)}</span></td>
+                    <td><span class="badge ${escapeHtml(item.business_status)}">${escapeHtml(item.business_status_label)}</span></td>
                     <td>${escapeHtml(item.recommended_next_action_label)}</td>
                     <td>${escapeHtml(missing)}</td>
                 </tr>
@@ -533,6 +543,7 @@ function resetBatchVisuals(status = "-") {
     exportBatchButton.disabled = true;
     filterPriority.value = "";
     filterCategory.innerHTML = '<option value="">Toutes</option>';
+    filterStatus.innerHTML = '<option value="">Tous</option>';
     filterSearch.value = "";
     filterMissingOnly.checked = false;
     batchFilterStatus.textContent = "Aucun filtre actif.";
@@ -550,7 +561,7 @@ function resetBatchVisuals(status = "-") {
             <strong>${escapeHtml(status)}</strong>
         </div>
     `;
-    batchTableBody.innerHTML = '<tr><td colspan="7">Aucun batch lance.</td></tr>';
+    batchTableBody.innerHTML = '<tr><td colspan="8">Aucun batch lance.</td></tr>';
 }
 
 function hydrateCategoryFilter(items) {
@@ -558,6 +569,14 @@ function hydrateCategoryFilter(items) {
     filterCategory.innerHTML = '<option value="">Toutes</option>' +
         categories
             .map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
+            .join("");
+}
+
+function hydrateStatusFilter(items) {
+    const statuses = [...new Set(items.map((item) => item.business_status_label))].sort();
+    filterStatus.innerHTML = '<option value="">Tous</option>' +
+        statuses
+            .map((status) => `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`)
             .join("");
 }
 
@@ -570,6 +589,7 @@ function applyBatchFilters() {
 
     const selectedPriority = filterPriority.value;
     const selectedCategory = filterCategory.value;
+    const selectedStatus = filterStatus.value;
     const searchTerm = filterSearch.value.trim().toLowerCase();
     const missingOnly = filterMissingOnly.checked;
     let visibleCount = 0;
@@ -577,9 +597,11 @@ function applyBatchFilters() {
     rows.forEach((row) => {
         const matchesPriority = !selectedPriority || row.dataset.priority === selectedPriority;
         const matchesCategory = !selectedCategory || row.dataset.category === selectedCategory;
+        const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
         const matchesMissing = !missingOnly || row.dataset.missing === "yes";
         const matchesSearch = !searchTerm || row.dataset.search.includes(searchTerm);
-        const isVisible = matchesPriority && matchesCategory && matchesMissing && matchesSearch;
+        const isVisible =
+            matchesPriority && matchesCategory && matchesStatus && matchesMissing && matchesSearch;
 
         row.classList.toggle("batch-row-hidden", !isVisible);
         if (isVisible) {

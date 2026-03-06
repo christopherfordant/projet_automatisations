@@ -74,6 +74,8 @@ def test_claims_intake_returns_business_labels() -> None:
     assert payload["category_label"] == "Suivi de remboursement"
     assert payload["priority_label"] == "Haute"
     assert "Copie de facture" in payload["missing_information_labels"]
+    assert payload["business_status"] == "blocked"
+    assert payload["business_status_label"] == "Bloque"
 
 
 def test_claims_intake_batch_returns_summary() -> None:
@@ -103,3 +105,22 @@ def test_claims_intake_batch_returns_summary() -> None:
     assert payload["summary"]["total_items"] == 2
     assert payload["summary"]["high_priority"] == 1
     assert payload["summary"]["categories"]["Suivi de remboursement"] == 1
+    assert payload["summary"]["business_statuses"]["Pret pour file prioritaire"] == 1
+
+
+def test_claims_intake_complaint_is_marked_for_review() -> None:
+    response = client.post(
+        "/automations/claims-intake",
+        json={
+            "channel": "telephone",
+            "customer_id": "CL-4000",
+            "contract_id": "DOS-4000",
+            "claim_text": "Bonjour, je souhaite faire une reclamation sur le traitement de mon dossier.",
+            "attached_documents": [],
+            "provider": "mock",
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["business_status"] == "to_review"
+    assert payload["business_status_label"] == "A revoir"

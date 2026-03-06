@@ -436,6 +436,22 @@ button:disabled {
     color: #155e59;
 }
 
+.badge.blocked {
+    background: #fde7e3;
+    color: #9a3412;
+}
+
+.badge.to_review {
+    background: #fff2d6;
+    color: #b45309;
+}
+
+.badge.ready_to_route,
+.badge.ready_for_priority_queue {
+    background: #e7f3f1;
+    color: #155e59;
+}
+
 .batch-details {
     margin-top: 16px;
 }

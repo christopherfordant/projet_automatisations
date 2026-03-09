@@ -5,7 +5,7 @@
       "parameters": {
         "path": "mutuelle/claims-intake",
         "httpMethod": "POST",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
         "options": {}
       },
       "id": "Webhook_Claims_Intake",
@@ -20,54 +20,12 @@
     },
     {
       "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "channel",
-              "value": "={{$json.body.channel || 'email'}}"
-            },
-            {
-              "name": "customer_id",
-              "value": "={{$json.body.customer_id || ''}}"
-            },
-            {
-              "name": "contract_id",
-              "value": "={{$json.body.contract_id || ''}}"
-            },
-            {
-              "name": "provider",
-              "value": "={{$json.body.provider || 'mock'}}"
-            },
-            {
-              "name": "claim_text",
-              "value": "={{$json.body.claim_text || ''}}"
-            }
-          ],
-          "json": [
-            {
-              "name": "attached_documents",
-              "value": "={{$json.body.attached_documents || []}}"
-            }
-          ]
-        }
-      },
-      "id": "Prepare_Request",
-      "name": "Prepare Request",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        40,
-        120
-      ]
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "http://127.0.0.1:8000/automations/claims-intake",
         "sendBody": true,
+        "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={\n  \"channel\": $json.channel,\n  \"customer_id\": $json.customer_id || null,\n  \"contract_id\": $json.contract_id || null,\n  \"provider\": $json.provider,\n  \"claim_text\": $json.claim_text,\n  \"attached_documents\": $json.attached_documents\n}",
+        "jsonBody": "={{ {\n  channel: $json.body.channel || 'email',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  claim_text: $json.body.claim_text || '',\n  attached_documents: $json.body.attached_documents || []\n} }}",
         "options": {}
       },
       "id": "Call_FastAPI",
@@ -75,22 +33,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        300,
-        120
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{$json}}",
-        "options": {}
-      },
-      "id": "Respond_To_Caller",
-      "name": "Respond To Caller",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.2,
-      "position": [
-        560,
+        80,
         120
       ]
     }
@@ -101,29 +44,7 @@
       "main": [
         [
           {
-            "node": "Prepare Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Request": {
-      "main": [
-        [
-          {
             "node": "Call FastAPI Claims Intake",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call FastAPI Claims Intake": {
-      "main": [
-        [
-          {
-            "node": "Respond To Caller",
             "type": "main",
             "index": 0
           }

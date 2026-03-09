@@ -5,7 +5,7 @@
       "parameters": {
         "path": "mutuelle/document-completeness",
         "httpMethod": "POST",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
         "options": {}
       },
       "id": "Webhook_Document_Completeness",
@@ -20,62 +20,12 @@
     },
     {
       "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "document_type",
-              "value": "={{$json.body.document_type || 'reimbursement'}}"
-            },
-            {
-              "name": "customer_id",
-              "value": "={{$json.body.customer_id || ''}}"
-            },
-            {
-              "name": "contract_id",
-              "value": "={{$json.body.contract_id || ''}}"
-            },
-            {
-              "name": "provider",
-              "value": "={{$json.body.provider || 'mock'}}"
-            },
-            {
-              "name": "message_tone",
-              "value": "={{$json.body.message_tone || 'neutral'}}"
-            },
-            {
-              "name": "output_channel",
-              "value": "={{$json.body.output_channel || 'email'}}"
-            },
-            {
-              "name": "document_text",
-              "value": "={{$json.body.document_text || ''}}"
-            }
-          ],
-          "json": [
-            {
-              "name": "attached_documents",
-              "value": "={{$json.body.attached_documents || []}}"
-            }
-          ]
-        }
-      },
-      "id": "Prepare_Document_Request",
-      "name": "Prepare Document Request",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        10,
-        160
-      ]
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "http://127.0.0.1:8000/automations/document-completeness",
         "sendBody": true,
+        "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={\n  \"document_type\": $json.document_type,\n  \"customer_id\": $json.customer_id || null,\n  \"contract_id\": $json.contract_id || null,\n  \"provider\": $json.provider,\n  \"message_tone\": $json.message_tone,\n  \"output_channel\": $json.output_channel,\n  \"document_text\": $json.document_text,\n  \"attached_documents\": $json.attached_documents\n}",
+        "jsonBody": "={{ {\n  document_type: $json.body.document_type || 'reimbursement',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  message_tone: $json.body.message_tone || 'neutral',\n  output_channel: $json.body.output_channel || 'email',\n  document_text: $json.body.document_text || '',\n  attached_documents: $json.body.attached_documents || []\n} }}",
         "options": {}
       },
       "id": "Call_FastAPI_Document_Completeness",
@@ -83,22 +33,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        300,
-        160
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{$json}}",
-        "options": {}
-      },
-      "id": "Respond_To_Document_Caller",
-      "name": "Respond To Document Caller",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.2,
-      "position": [
-        560,
+        20,
         160
       ]
     }
@@ -109,29 +44,7 @@
       "main": [
         [
           {
-            "node": "Prepare Document Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Document Request": {
-      "main": [
-        [
-          {
             "node": "Call FastAPI Document Completeness",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call FastAPI Document Completeness": {
-      "main": [
-        [
-          {
-            "node": "Respond To Document Caller",
             "type": "main",
             "index": 0
           }

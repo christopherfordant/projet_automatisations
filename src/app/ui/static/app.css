@@ -137,6 +137,46 @@ h1 {
     border-bottom: 1px solid rgba(216, 207, 190, 0.9);
 }
 
+.drop-folder-panel {
+    display: grid;
+    gap: 16px;
+    padding-bottom: 22px;
+    margin-bottom: 22px;
+    border-bottom: 1px solid rgba(216, 207, 190, 0.9);
+}
+
+.drop-folder-paths {
+    display: grid;
+    gap: 6px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: #faf5eb;
+    border: 1px solid rgba(216, 207, 190, 0.9);
+    font: 400 0.9rem/1.4 "Segoe UI", sans-serif;
+}
+
+.drop-folder-paths p {
+    margin: 0;
+}
+
+.drop-folder-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+}
+
+.drop-folder-column {
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(216, 207, 190, 0.9);
+    background: #fff;
+}
+
+.drop-folder-column h3 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+}
+
 .section-kicker {
     margin: 0 0 6px;
     color: var(--accent-2);

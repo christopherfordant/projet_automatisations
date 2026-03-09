@@ -146,6 +146,65 @@
                 </div>
             </div>
 
+            <div class="drop-folder-panel">
+                <div>
+                    <p class="section-kicker">Depot surveille</p>
+                    <h2>Simuler le repertoire que n8n recuperera</h2>
+                    <p class="hint">
+                        Cette zone depose des fichiers dans le repertoire local surveille. Si
+                        <code>watch_claims_drop_folder.ps1</code> tourne, les fichiers seront envoyes
+                        automatiquement vers les workflows <code>n8n</code>.
+                    </p>
+                </div>
+
+                <div class="csv-actions">
+                    <label class="csv-field">
+                        Fichiers pour le depot
+                        <input type="file" id="drop-folder-file" accept=".csv,.json,application/json,text/csv" multiple>
+                    </label>
+
+                    <button type="button" id="drop-folder-upload" class="secondary">
+                        Deposer dans le repertoire surveille
+                    </button>
+
+                    <button type="button" id="drop-folder-refresh" class="secondary">
+                        Actualiser les repertoires
+                    </button>
+                </div>
+
+                <div id="drop-folder-zone" class="dropzone" tabindex="0">
+                    <strong>Glisse-depose des CSV ou JSON ici</strong>
+                    <span>La zone copie les fichiers dans <code>dropzones/incoming</code>.</span>
+                </div>
+
+                <p id="drop-folder-status" class="csv-status">Chargement du repertoire surveille...</p>
+                <div class="drop-folder-paths">
+                    <p><strong>Incoming:</strong> <span id="drop-folder-watch-path">-</span></p>
+                    <p><strong>Archive:</strong> <span id="drop-folder-archive-path">-</span></p>
+                    <p><strong>Erreur:</strong> <span id="drop-folder-error-path">-</span></p>
+                </div>
+                <div class="drop-folder-grid">
+                    <article class="drop-folder-column">
+                        <h3>Incoming</h3>
+                        <ul id="drop-folder-incoming-list" class="file-list">
+                            <li>Aucun fichier.</li>
+                        </ul>
+                    </article>
+                    <article class="drop-folder-column">
+                        <h3>Archive</h3>
+                        <ul id="drop-folder-archive-list" class="file-list">
+                            <li>Aucun fichier.</li>
+                        </ul>
+                    </article>
+                    <article class="drop-folder-column">
+                        <h3>Erreur</h3>
+                        <ul id="drop-folder-error-list" class="file-list">
+                            <li>Aucun fichier.</li>
+                        </ul>
+                    </article>
+                </div>
+            </div>
+
             <form id="claims-form" class="form">
                 <label>
                     Canal

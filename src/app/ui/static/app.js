@@ -51,6 +51,17 @@ const csvPreview = document.getElementById("csv-preview");
 const runBatchButton = document.getElementById("run-batch");
 const csvDropzone = document.getElementById("csv-dropzone");
 const csvFileList = document.getElementById("csv-file-list");
+const dropFolderFileInput = document.getElementById("drop-folder-file");
+const dropFolderUploadButton = document.getElementById("drop-folder-upload");
+const dropFolderRefreshButton = document.getElementById("drop-folder-refresh");
+const dropFolderZone = document.getElementById("drop-folder-zone");
+const dropFolderStatus = document.getElementById("drop-folder-status");
+const dropFolderWatchPath = document.getElementById("drop-folder-watch-path");
+const dropFolderArchivePath = document.getElementById("drop-folder-archive-path");
+const dropFolderErrorPath = document.getElementById("drop-folder-error-path");
+const dropFolderIncomingList = document.getElementById("drop-folder-incoming-list");
+const dropFolderArchiveList = document.getElementById("drop-folder-archive-list");
+const dropFolderErrorList = document.getElementById("drop-folder-error-list");
 let csvRows = [];
 let lastBatchItems = [];
 let manualStatusOverrides = {};
@@ -176,6 +187,7 @@ const STORAGE_KEYS = {
 loadPersistedState();
 renderCarrierProfile();
 renderActionLog();
+void loadDropzoneStatus();
 
 fillExample.addEventListener("click", () => {
     const profile = getCurrentCarrierProfile();
@@ -223,6 +235,14 @@ csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
 csvDropzone.addEventListener("drop", handleDrop);
+dropFolderUploadButton.addEventListener("click", uploadDropzoneFiles);
+dropFolderRefreshButton.addEventListener("click", () => {
+    void loadDropzoneStatus("Repertoires actualises.");
+});
+dropFolderZone.addEventListener("dragenter", activateDropFolderZone);
+dropFolderZone.addEventListener("dragover", activateDropFolderZone);
+dropFolderZone.addEventListener("dragleave", deactivateDropFolderZone);
+dropFolderZone.addEventListener("drop", handleDropFolderDrop);
 copyDocumentMessageButton.addEventListener("click", () => {
     void copyToClipboard(documentRequestMessage.textContent, "Message documentaire copie.");
 });
@@ -520,6 +540,127 @@ function deactivateDropzone(event) {
         event.preventDefault();
     }
     csvDropzone.classList.remove("is-active");
+}
+
+function activateDropFolderZone(event) {
+    event.preventDefault();
+    dropFolderZone.classList.add("is-active");
+}
+
+function deactivateDropFolderZone(event) {
+    if (event) {
+        event.preventDefault();
+    }
+    dropFolderZone.classList.remove("is-active");
+}
+
+async function handleDropFolderDrop(event) {
+    event.preventDefault();
+    deactivateDropFolderZone();
+    const files = Array.from(event.dataTransfer?.files || []);
+    await uploadFilesToDropzone(files);
+}
+
+async function uploadDropzoneFiles() {
+    const files = Array.from(dropFolderFileInput.files || []);
+    await uploadFilesToDropzone(files);
+}
+
+async function uploadFilesToDropzone(files) {
+    const supportedFiles = files.filter((file) => {
+        const lowerName = file.name.toLowerCase();
+        return lowerName.endsWith(".csv") || lowerName.endsWith(".json");
+    });
+
+    if (supportedFiles.length === 0) {
+        dropFolderStatus.textContent = "Selectionne au moins un fichier .csv ou .json.";
+        return;
+    }
+
+    const formData = new FormData();
+    supportedFiles.forEach((file) => {
+        formData.append("files", file);
+    });
+
+    dropFolderStatus.textContent = "Depot des fichiers en cours...";
+
+    try {
+        const response = await fetch("/ui/dropzone-upload", {
+            method: "POST",
+            body: formData,
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || JSON.stringify(data));
+        }
+
+        dropFolderStatus.textContent = `${data.count} fichier(s) depose(s) dans le repertoire surveille.`;
+        dropFolderFileInput.value = "";
+        await loadDropzoneStatus();
+    } catch (error) {
+        dropFolderStatus.textContent = `Echec du depot: ${String(error)}`;
+    }
+}
+
+async function loadDropzoneStatus(successMessage = "") {
+    try {
+        const response = await fetch("/ui/dropzone-status");
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(JSON.stringify(data));
+        }
+
+        dropFolderWatchPath.textContent = data.watch_path;
+        dropFolderArchivePath.textContent = data.archive_path;
+        dropFolderErrorPath.textContent = data.error_path;
+        renderDropzoneFileList(dropFolderIncomingList, data.incoming, "Aucun fichier en attente.");
+        renderDropzoneFileList(dropFolderArchiveList, data.archive, "Aucun fichier archive.");
+        renderDropzoneFileList(dropFolderErrorList, data.error, "Aucun fichier en erreur.");
+        dropFolderStatus.textContent =
+            successMessage ||
+            `${data.incoming.length} fichier(s) en attente, ${data.archive.length} archive(s), ${data.error.length} erreur(s).`;
+    } catch (error) {
+        dropFolderStatus.textContent = `Impossible de lire le repertoire surveille: ${String(error)}`;
+    }
+}
+
+function renderDropzoneFileList(container, files, emptyMessage) {
+    if (!files || files.length === 0) {
+        container.innerHTML = `<li>${escapeHtml(emptyMessage)}</li>`;
+        return;
+    }
+
+    container.innerHTML = files
+        .map((file) => {
+            const updatedAt = formatDropzoneDate(file.updated_at);
+            return `<li>${escapeHtml(file.name)} - ${formatBytes(file.size_bytes)} - ${escapeHtml(updatedAt)}</li>`;
+        })
+        .join("");
+}
+
+function formatDropzoneDate(value) {
+    if (!value) {
+        return "-";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleString("fr-FR");
+}
+
+function formatBytes(value) {
+    const size = Number(value || 0);
+    if (size < 1024) {
+        return `${size} o`;
+    }
+    if (size < 1024 * 1024) {
+        return `${(size / 1024).toFixed(1)} Ko`;
+    }
+    return `${(size / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
 async function importCsvFiles(files) {

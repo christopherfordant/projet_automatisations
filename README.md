@@ -69,6 +69,7 @@ Workflows n8n ajoutes:
 Canal d'entree local ajoute:
 
 - `dossier surveille` pour deposer simplement des fichiers metier sans integrer un SI tout de suite
+- `zone de depot graphique` dans l'interface web pour alimenter `dropzones/incoming` sans passer par l'explorateur
 
 Helpers SQL ajoutes:
 
@@ -179,6 +180,12 @@ Formats pris en charge:
 - `.json` batch avec `items`
 - `.json` documentaire avec `document_type`
 - `.json` unitaire `claims intake`
+
+L'interface web propose aussi une zone `Depot surveille` qui:
+
+- envoie des `.csv` et `.json` vers `dropzones/incoming`
+- affiche `incoming`, `archive` et `error`
+- sert de simulation visuelle du repertoire surveille par `n8n`
 
 ## Endpoints initiaux
 

@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://127.0.0.1:11434/v1", alias="OLLAMA_BASE_URL")
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
     openai_api_key: str = Field(default="change-me-if-needed", alias="OPENAI_API_KEY")
+    web_lookup_timeout_seconds: float = Field(default=12.0, alias="WEB_LOOKUP_TIMEOUT_SECONDS")
+    web_lookup_allowed_domains: str = Field(
+        default="ameli.fr,service-public.fr,economie.gouv.fr",
+        alias="WEB_LOOKUP_ALLOWED_DOMAINS",
+    )
 
 
 @lru_cache

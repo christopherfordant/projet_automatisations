@@ -257,6 +257,11 @@
                     </select>
                 </label>
 
+                <label class="checkbox-filter">
+                    <input type="checkbox" name="web_lookup_enabled">
+                    Enrichir depuis des sources web officielles
+                </label>
+
                 <label class="full">
                     Description de la demande
                     <span class="hint">Les numeros client et dossier sont detectes automatiquement si le texte contient par exemple `client CL-2048` ou `dossier DOS-7788`.</span>
@@ -318,6 +323,13 @@
         <section class="card">
             <h2>Reponse technique complete</h2>
             <pre id="raw-output" class="output">Le JSON complet apparaitra ici.</pre>
+        </section>
+
+        <section class="card">
+            <h2>Sources web verifiees</h2>
+            <ul id="claims-web-sources" class="list">
+                <li>Aucune source consultee.</li>
+            </ul>
         </section>
 
         <section class="card">
@@ -544,6 +556,11 @@
                     </select>
                 </label>
 
+                <label class="checkbox-filter">
+                    <input type="checkbox" name="web_lookup_enabled">
+                    Enrichir depuis des sources web officielles
+                </label>
+
                 <label class="full">
                     Texte du dossier
                     <textarea
@@ -607,6 +624,13 @@
             <div class="actions">
                 <button type="button" id="copy-document-message" class="secondary">Copier le message</button>
             </div>
+        </section>
+
+        <section class="card">
+            <h2>Sources web verifiees documentaires</h2>
+            <ul id="document-web-sources" class="list">
+                <li>Aucune source consultee.</li>
+            </ul>
         </section>
 
         <section class="card">

@@ -137,3 +137,86 @@ def test_document_completeness_can_be_ready() -> None:
     assert "Dossier complet" in result["client_request_subject"]
     assert "merci pour votre envoi" in result["client_request_message"].lower()
     assert "salutations distinguees" in result["client_request_message"].lower()
+
+
+def test_claims_intake_can_attach_verified_web_sources(monkeypatch) -> None:
+    service = AutomationService()
+
+    async def fake_lookup_claim_sources(missing_information: list[str]) -> list[dict[str, object]]:
+        assert "invoice_copy" in missing_information
+        return [
+            {
+                "lookup_key": "invoice_copy",
+                "title": "Feuille de soins papier",
+                "url": "https://www.ameli.fr/example",
+                "domain": "ameli.fr",
+                "checked_at": "2026-03-09T10:00:00+00:00",
+                "verified": True,
+                "snippet": "Source officielle.",
+            }
+        ]
+
+    monkeypatch.setattr(service.web_lookup_service, "lookup_claim_sources", fake_lookup_claim_sources)
+
+    result = asyncio.run(
+        service.run_claims_intake(
+            ClaimIntakeRequest(
+                channel="email",
+                customer_id="CL-8122",
+                claim_text="Bonjour, je souhaite un remboursement de facture.",
+                attached_documents=[],
+                web_lookup_enabled=True,
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["web_lookup_used"] is True
+    assert result["verified_web_sources"][0]["domain"] == "ameli.fr"
+
+
+def test_document_completeness_can_attach_verified_web_sources(monkeypatch) -> None:
+    service = AutomationService()
+
+    async def fake_lookup_document_sources(
+        document_type: str,
+        missing_required_documents: list[str],
+    ) -> list[dict[str, object]]:
+        assert document_type == "complaint"
+        assert "historique echanges" in missing_required_documents
+        return [
+            {
+                "lookup_key": "document_type:complaint",
+                "title": "Litige avec une mutuelle",
+                "url": "https://www.service-public.fr/example",
+                "domain": "service-public.fr",
+                "checked_at": "2026-03-09T10:00:00+00:00",
+                "verified": True,
+                "snippet": "Source officielle.",
+            }
+        ]
+
+    monkeypatch.setattr(
+        service.web_lookup_service,
+        "lookup_document_sources",
+        fake_lookup_document_sources,
+    )
+
+    result = asyncio.run(
+        service.run_document_completeness(
+            DocumentCompletenessRequest(
+                document_type="complaint",
+                customer_id="CL-4001",
+                contract_id="DOS-7788",
+                document_text="Bonjour, je depose une reclamation ecrite avec mon numero dossier.",
+                attached_documents=["courrier de reclamation", "numero dossier"],
+                message_tone="neutral",
+                output_channel="email",
+                web_lookup_enabled=True,
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["web_lookup_used"] is True
+    assert result["verified_web_sources"][0]["domain"] == "service-public.fr"

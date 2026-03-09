@@ -26,6 +26,10 @@ class DocumentCompletenessRequest(BaseModel):
     attached_documents: list[str] = Field(default_factory=list, description="Pieces deja declarees")
     message_tone: str = Field(default="neutral", description="Ton du message client a generer")
     output_channel: str = Field(default="email", description="Canal de sortie du message client")
+    web_lookup_enabled: bool = Field(
+        default=False,
+        description="Active une recherche de guidance sur des sources web officielles autorisees",
+    )
     provider: str | None = Field(default=None, description="Provider IA a utiliser")
 
 
@@ -35,6 +39,10 @@ class ClaimIntakeRequest(BaseModel):
     channel: str = Field(default="email", description="Canal d'entree")
     claim_text: str = Field(..., description="Demande ou signalement entrant")
     attached_documents: list[str] = Field(default_factory=list, description="Liste descriptive des pieces")
+    web_lookup_enabled: bool = Field(
+        default=False,
+        description="Active une recherche de guidance sur des sources web officielles autorisees",
+    )
     provider: str | None = Field(default=None, description="Provider IA a utiliser")
 
 

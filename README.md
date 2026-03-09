@@ -181,6 +181,22 @@ Formats pris en charge:
 - `.json` documentaire avec `document_type`
 - `.json` unitaire `claims intake`
 
+## Enrichissement web verifie
+
+Les modules `claims intake` et `document completeness` peuvent maintenant, si active par requete ou depuis l'interface, aller chercher une guidance complementaire sur des sources web officielles autorisees.
+
+Principes de cette couche:
+
+- domaines autorises uniquement;
+- horodatage `checked_at` dans le resultat;
+- URL source et extrait restitues a l'operateur;
+- usage cible: completer un dossier avec une guidance procedurale recente, pas inventer un identifiant client absent.
+
+Configuration associee:
+
+- `WEB_LOOKUP_TIMEOUT_SECONDS`
+- `WEB_LOOKUP_ALLOWED_DOMAINS`
+
 L'interface web propose aussi une zone `Depot surveille` qui:
 
 - envoie des `.csv` et `.json` vers `dropzones/incoming`

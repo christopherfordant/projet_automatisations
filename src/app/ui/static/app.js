@@ -18,9 +18,11 @@ const missingList = document.getElementById("missing-list");
 const documentMissingList = document.getElementById("document-missing-list");
 const documentPresentList = document.getElementById("document-present-list");
 const frictionList = document.getElementById("friction-list");
+const claimsWebSources = document.getElementById("claims-web-sources");
 const operatorSummary = document.getElementById("operator-summary");
 const documentOutput = document.getElementById("document-output");
 const documentRequestMessage = document.getElementById("document-request-message");
+const documentWebSources = document.getElementById("document-web-sources");
 const copyDocumentMessageButton = document.getElementById("copy-document-message");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
@@ -257,6 +259,7 @@ documentForm.addEventListener("submit", async (event) => {
         provider: documentForm.provider.value,
         message_tone: documentForm.message_tone.value,
         output_channel: documentForm.output_channel.value,
+        web_lookup_enabled: documentForm.web_lookup_enabled.checked,
         document_text: documentForm.document_text.value,
         attached_documents: documentForm.attached_documents.value
             .split(",")
@@ -277,6 +280,7 @@ documentForm.addEventListener("submit", async (event) => {
     );
     documentMissingList.innerHTML = "<li>Verification en cours...</li>";
     documentPresentList.innerHTML = "<li>Verification en cours...</li>";
+    renderVerifiedWebSources(documentWebSources, []);
     documentOutput.textContent = "Chargement...";
 
     try {
@@ -305,6 +309,7 @@ documentForm.addEventListener("submit", async (event) => {
             data.client_request_subject,
             data.client_request_message,
         );
+        renderVerifiedWebSources(documentWebSources, data.verified_web_sources || []);
         documentOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
         setDocumentSummary({
@@ -320,6 +325,7 @@ documentForm.addEventListener("submit", async (event) => {
         );
         documentMissingList.innerHTML = "<li>La verification a echoue.</li>";
         documentPresentList.innerHTML = "<li>Aucun resultat.</li>";
+        renderVerifiedWebSources(documentWebSources, []);
         documentOutput.textContent = String(error);
     }
 });
@@ -332,6 +338,7 @@ form.addEventListener("submit", async (event) => {
         customer_id: form.customer_id.value || null,
         contract_id: form.contract_id.value || null,
         provider: form.provider.value,
+        web_lookup_enabled: form.web_lookup_enabled.checked,
         claim_text: form.claim_text.value,
         attached_documents: form.attached_documents.value
             .split(",")
@@ -351,6 +358,7 @@ form.addEventListener("submit", async (event) => {
         flags: ["Analyse en cours..."],
     });
     missingList.innerHTML = "<li>Analyse en cours...</li>";
+    renderVerifiedWebSources(claimsWebSources, []);
     operatorSummary.textContent = "Chargement...";
     rawOutput.textContent = "Chargement...";
 
@@ -381,6 +389,7 @@ form.addEventListener("submit", async (event) => {
             flags: data.friction_flag_labels,
         });
         renderMissing(data.missing_information_labels);
+        renderVerifiedWebSources(claimsWebSources, data.verified_web_sources || []);
         operatorSummary.textContent = data.operator_summary;
         rawOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
@@ -396,6 +405,7 @@ form.addEventListener("submit", async (event) => {
             flags: ["La requete a echoue."],
         });
         missingList.innerHTML = "<li>La requete a echoue.</li>";
+        renderVerifiedWebSources(claimsWebSources, []);
         operatorSummary.textContent = "Verifier que l'API tourne et que le provider choisi est disponible.";
         rawOutput.textContent = String(error);
     }
@@ -540,6 +550,37 @@ function deactivateDropzone(event) {
         event.preventDefault();
     }
     csvDropzone.classList.remove("is-active");
+}
+
+function renderVerifiedWebSources(target, items) {
+    if (!items || items.length === 0) {
+        target.innerHTML = "<li>Aucune source consultee.</li>";
+        return;
+    }
+
+    target.innerHTML = items
+        .map(
+            (item) => `
+                <li>
+                    <strong>${escapeHtml(item.title || item.url)}</strong><br>
+                    <span>${escapeHtml(item.domain || "-")} • verifie le ${escapeHtml(formatCheckedAt(item.checked_at))}</span><br>
+                    <a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Ouvrir la source</a>
+                    ${item.snippet ? `<br><span>${escapeHtml(item.snippet)}</span>` : ""}
+                </li>
+            `,
+        )
+        .join("");
+}
+
+function formatCheckedAt(value) {
+    if (!value) {
+        return "-";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleString("fr-FR");
 }
 
 function activateDropFolderZone(event) {

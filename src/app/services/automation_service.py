@@ -4,6 +4,7 @@ from app.connectors.mutuelle_catalog import CONNECTOR_CATALOG
 from app.core.config import get_settings
 from app.providers.base import PromptRequest
 from app.providers.registry import get_provider
+from app.services.verified_web_lookup import VerifiedWebLookupService
 from app.schemas.automation import (
     AutomationRequest,
     ClaimIntakeBatchRequest,
@@ -87,6 +88,9 @@ class AutomationService:
         },
     }
 
+    def __init__(self) -> None:
+        self.web_lookup_service = VerifiedWebLookupService()
+
     async def run_intake(self, payload: AutomationRequest) -> dict[str, object]:
         settings = get_settings()
         provider = get_provider(payload.provider)
@@ -150,6 +154,10 @@ class AutomationService:
         )
 
         ai_result = await provider.generate(prompt)
+        verified_web_sources = await self._resolve_claim_web_sources(
+            payload.web_lookup_enabled,
+            missing_information,
+        )
         client_request = self._build_claim_missing_info_message(
             customer_id=resolved_customer_id,
             contract_id=resolved_contract_id,
@@ -170,6 +178,8 @@ class AutomationService:
             "documents_received": payload.attached_documents,
             "client_request_subject": client_request["subject"],
             "client_request_message": client_request["message"],
+            "web_lookup_used": payload.web_lookup_enabled,
+            "verified_web_sources": verified_web_sources,
             "operator_summary": ai_result["content"],
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
@@ -287,6 +297,11 @@ class AutomationService:
             model=settings.default_ai_model,
         )
         ai_result = await provider.generate(prompt)
+        verified_web_sources = await self._resolve_document_web_sources(
+            payload.web_lookup_enabled,
+            payload.document_type,
+            missing_required,
+        )
         request_message = self._build_missing_documents_message(
             profile_label=profile["label"],
             customer_id=payload.customer_id,
@@ -314,10 +329,34 @@ class AutomationService:
             "output_channel": payload.output_channel,
             "client_request_subject": request_message["subject"],
             "client_request_message": request_message["message"],
+            "web_lookup_used": payload.web_lookup_enabled,
+            "verified_web_sources": verified_web_sources,
             "operator_summary": ai_result["content"],
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
         }
+
+    async def _resolve_claim_web_sources(
+        self,
+        web_lookup_enabled: bool,
+        missing_information: list[str],
+    ) -> list[dict[str, object]]:
+        if not web_lookup_enabled or not missing_information:
+            return []
+        return await self.web_lookup_service.lookup_claim_sources(missing_information)
+
+    async def _resolve_document_web_sources(
+        self,
+        web_lookup_enabled: bool,
+        document_type: str,
+        missing_required_documents: list[str],
+    ) -> list[dict[str, object]]:
+        if not web_lookup_enabled:
+            return []
+        return await self.web_lookup_service.lookup_document_sources(
+            document_type,
+            missing_required_documents,
+        )
 
     @staticmethod
     def _classify_claim_category(normalized_text: str) -> str:

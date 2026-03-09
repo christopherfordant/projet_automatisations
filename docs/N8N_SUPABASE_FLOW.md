@@ -60,6 +60,23 @@ Ce mode facilite l'integration par:
 - batch `items`;
 - pipeline CSV brut.
 
+## Dossier surveille en entree
+
+Pour une mutuelle qui ne sait pas pousser un evenement vers `n8n`, utiliser le watcher local:
+
+```powershell
+.\scripts\watch_claims_drop_folder.ps1
+```
+
+Comportement:
+
+- `.csv` -> `full-csv-claims-pipeline`
+- `.json` avec `items` -> `claims-intake-batch`
+- `.json` avec `document_type` -> `document-completeness`
+- `.json` simple -> `claims-intake`
+
+Cela permet de commencer avec un depot de fichiers avant une integration plus profonde du SI.
+
 ## URL cible cote n8n
 
 Dans Docker, le workflow pointe vers:

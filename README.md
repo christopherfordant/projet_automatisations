@@ -25,6 +25,7 @@ Le socle est pense pour:
 - `scripts/setup_local.ps1`: bootstrap local.
 - `scripts/start_local_ai_stack.ps1`: demarrage de la stack locale d'infrastructure.
 - `scripts/start_n8n_local.ps1`: lancement local de `n8n` sans Docker avec le runtime Node 22 du projet.
+- `scripts/watch_claims_drop_folder.ps1`: surveillance locale d'un dossier pour envoyer automatiquement `.csv` et `.json` vers `n8n`.
 - `infra/docker-compose.local.yml`: socle local `n8n + Postgres + Qdrant + Ollama`.
 - `docs/LOCAL_AI_STACK.md`: architecture cible.
 - `docs/N8N_SUPABASE_FLOW.md`: branchement `n8n + FastAPI + Supabase`.
@@ -64,6 +65,10 @@ Workflows n8n ajoutes:
 - `document completeness`
 - `missing info follow-up campaign`
 - `full csv claims pipeline`
+
+Canal d'entree local ajoute:
+
+- `dossier surveille` pour deposer simplement des fichiers metier sans integrer un SI tout de suite
 
 Helpers SQL ajoutes:
 
@@ -150,6 +155,30 @@ Si `n8n` affiche une erreur de schema SQLite au premier acces, tu peux reinitial
 ```powershell
 .\scripts\start_n8n_local.ps1 -ResetLocalData
 ```
+
+## Dossier surveille local
+
+Pour simuler une mutuelle qui depose des fichiers sans integration complexe:
+
+```powershell
+.\scripts\watch_claims_drop_folder.ps1
+```
+
+Le script surveille:
+
+- `dropzones/incoming`
+
+Puis:
+
+- archive les succes dans `dropzones/archive`
+- deplace les erreurs dans `dropzones/error`
+
+Formats pris en charge:
+
+- `.csv` vers le pipeline CSV complet `n8n`
+- `.json` batch avec `items`
+- `.json` documentaire avec `document_type`
+- `.json` unitaire `claims intake`
 
 ## Endpoints initiaux
 

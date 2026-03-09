@@ -72,6 +72,20 @@ Ensuite:
 5. Les pieces et embeddings sont indexes dans `Qdrant`.
 6. Les files operateur ou relances partent depuis `n8n`.
 
+## Mode d'adoption SI recommande
+
+Pour faciliter l'adoption cote mutuelle:
+
+1. commencer par un `dossier surveille` ou un `CSV`;
+2. passer ensuite au batch automatise;
+3. monter plus tard vers `API`, `SFTP`, `email` ou base partagee.
+
+Le depot contient deja un mode simple `dossier surveille`:
+
+```powershell
+.\scripts\watch_claims_drop_folder.ps1
+```
+
 ## Outils locaux gratuits conseilles
 
 - `n8n`

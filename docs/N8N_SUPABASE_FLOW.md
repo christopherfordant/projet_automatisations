@@ -15,23 +15,20 @@
 Le workflow `claims_intake_webhook.json`:
 
 1. recoit un `POST` sur un webhook n8n;
-2. normalise le payload;
-3. appelle `POST /automations/claims-intake` sur l'API FastAPI locale;
-4. renvoie directement la reponse au caller.
+2. appelle `POST /automations/claims-intake` sur l'API FastAPI locale;
+3. renvoie directement la reponse du dernier noeud.
 
 Le workflow `claims_intake_batch_webhook.json`:
 
 1. recoit un lot de dossiers en `POST`;
 2. appelle `POST /automations/claims-intake/batch`;
-3. prepare une charge exploitable pour stockage;
-4. renvoie le JSON batch au caller.
+3. renvoie directement le JSON batch au caller.
 
 Le workflow `document_completeness_webhook.json`:
 
 1. recoit un dossier documentaire en `POST`;
 2. appelle `POST /automations/document-completeness`;
-3. renvoie la checklist et le message client genere;
-4. peut ensuite etre branche vers `document_checks`.
+3. renvoie directement la checklist et le message client genere.
 
 Le workflow `missing_info_followup_campaign.json`:
 
@@ -45,8 +42,23 @@ Le workflow `full_csv_claims_pipeline.json`:
 1. recoit un CSV brut en webhook;
 2. parse les lignes dans n8n;
 3. appelle `POST /automations/claims-intake/batch`;
-4. stocke le resultat complet via `save_claim_batch(...)`;
-5. renvoie le `batch_id` et le resume.
+4. renvoie directement le resultat batch.
+
+## Mode local simple recommande
+
+Pour demarrer vite avec une mutuelle ou un POC interne:
+
+- importer les workflows webhooks simplifies;
+- faire repondre le `Webhook` avec le dernier noeud;
+- garder `FastAPI` comme coeur metier;
+- ajouter `Postgres/Supabase` seulement apres validation du flux.
+
+Ce mode facilite l'integration par:
+
+- webhook direct;
+- payload JSON manuel;
+- batch `items`;
+- pipeline CSV brut.
 
 ## URL cible cote n8n
 
@@ -119,9 +131,8 @@ Pour le pipeline CSV complet:
 
 1. `Import from file`
 2. choisir `n8n/workflows/full_csv_claims_pipeline.json`
-3. associer le credential `Postgres`
-4. sauvegarder le workflow
-5. l'activer si besoin
+3. sauvegarder le workflow
+4. l'activer si besoin
 
 ## Schema Supabase local
 

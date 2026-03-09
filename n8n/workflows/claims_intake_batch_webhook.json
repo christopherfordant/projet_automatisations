@@ -5,7 +5,7 @@
       "parameters": {
         "path": "mutuelle/claims-intake-batch",
         "httpMethod": "POST",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
         "options": {}
       },
       "id": "Webhook_Claims_Intake_Batch",
@@ -20,42 +20,12 @@
     },
     {
       "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "source_name",
-              "value": "={{$json.body.source_name || 'n8n_batch_import'}}"
-            },
-            {
-              "name": "imported_by",
-              "value": "={{$json.body.imported_by || 'n8n'}}"
-            }
-          ],
-          "json": [
-            {
-              "name": "items",
-              "value": "={{$json.body.items || []}}"
-            }
-          ]
-        }
-      },
-      "id": "Prepare_Batch_Request",
-      "name": "Prepare Batch Request",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -10,
-        140
-      ]
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "http://127.0.0.1:8000/automations/claims-intake/batch",
         "sendBody": true,
+        "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={\n  \"items\": $json.items\n}",
+        "jsonBody": "={{ {\n  items: $json.body.items || []\n} }}",
         "options": {}
       },
       "id": "Call_FastAPI_Batch",
@@ -63,53 +33,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        260,
-        140
-      ]
-    },
-    {
-      "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "source_name",
-              "value": "={{$('Prepare Batch Request').item.json.source_name}}"
-            },
-            {
-              "name": "imported_by",
-              "value": "={{$('Prepare Batch Request').item.json.imported_by}}"
-            }
-          ],
-          "json": [
-            {
-              "name": "batch_payload",
-              "value": "={{$json}}"
-            }
-          ]
-        }
-      },
-      "id": "Prepare_Supabase_Payload",
-      "name": "Prepare Supabase Payload",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        520,
-        140
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{$json.batch_payload || $json}}",
-        "options": {}
-      },
-      "id": "Respond_To_Batch_Caller",
-      "name": "Respond To Batch Caller",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.2,
-      "position": [
-        780,
+        20,
         140
       ]
     }
@@ -120,40 +44,7 @@
       "main": [
         [
           {
-            "node": "Prepare Batch Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Batch Request": {
-      "main": [
-        [
-          {
             "node": "Call FastAPI Claims Intake Batch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Call FastAPI Claims Intake Batch": {
-      "main": [
-        [
-          {
-            "node": "Prepare Supabase Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Supabase Payload": {
-      "main": [
-        [
-          {
-            "node": "Respond To Batch Caller",
             "type": "main",
             "index": 0
           }

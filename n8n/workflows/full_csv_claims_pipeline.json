@@ -5,7 +5,7 @@
       "parameters": {
         "path": "mutuelle/full-csv-claims-pipeline",
         "httpMethod": "POST",
-        "responseMode": "responseNode",
+        "responseMode": "lastNode",
         "options": {}
       },
       "id": "Webhook_Full_CSV_Pipeline",
@@ -20,47 +20,14 @@
     },
     {
       "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "source_name",
-              "value": "={{$json.body.source_name || 'csv_pipeline_import'}}"
-            },
-            {
-              "name": "imported_by",
-              "value": "={{$json.body.imported_by || 'n8n_csv_pipeline'}}"
-            },
-            {
-              "name": "provider",
-              "value": "={{$json.body.provider || 'mock'}}"
-            },
-            {
-              "name": "csv_content",
-              "value": "={{$json.body.csv_content || ''}}"
-            }
-          ]
-        }
-      },
-      "id": "Prepare_CSV_Request",
-      "name": "Prepare CSV Request",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        -280,
-        180
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const sourceName = $json.source_name || 'csv_pipeline_import';\nconst provider = $json.provider || 'mock';\nconst csvContent = $json.csv_content || '';\n\nfunction splitCsvLine(line) {\n  const values = [];\n  let current = '';\n  let inQuotes = false;\n  for (let i = 0; i < line.length; i += 1) {\n    const char = line[i];\n    const nextChar = line[i + 1];\n    if (char === '\"') {\n      if (inQuotes && nextChar === '\"') {\n        current += '\"';\n        i += 1;\n      } else {\n        inQuotes = !inQuotes;\n      }\n      continue;\n    }\n    if (char === ',' && !inQuotes) {\n      values.push(current);\n      current = '';\n      continue;\n    }\n    current += char;\n  }\n  values.push(current);\n  return values;\n}\n\nfunction normalizeHeader(header) {\n  return String(header || '').trim().toLowerCase().replace(/ /g, '_').replace(/-/g, '_');\n}\n\nconst lines = csvContent.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);\nif (lines.length < 2) {\n  return [{ json: { source_name: sourceName, provider, items: [] } }];\n}\n\nconst headers = splitCsvLine(lines[0]).map(normalizeHeader);\nconst items = lines.slice(1).map((line) => {\n  const values = splitCsvLine(line);\n  const row = {};\n  headers.forEach((header, index) => {\n    row[header] = (values[index] || '').trim();\n  });\n  const attachedDocuments = String(row.attached_documents || row.documents || row.pieces_jointes || '')\n    .split(',')\n    .map((item) => item.trim())\n    .filter(Boolean);\n  return {\n    source_file: sourceName,\n    channel: ['email', 'telephone', 'courrier', 'portail'].includes((row.channel || '').toLowerCase()) ? row.channel.toLowerCase() : 'email',\n    customer_id: row.customer_id || row.client_id || null,\n    contract_id: row.contract_id || row.case_id || row.dossier_id || row.claim_id || null,\n    provider,\n    claim_text: row.claim_text || row.message || row.description || '',\n    attached_documents: attachedDocuments\n  };\n});\n\nreturn [{ json: { source_name: sourceName, provider, items } }];"
+        "jsCode": "const sourceName = $json.body?.source_name || 'csv_pipeline_import';\nconst provider = $json.body?.provider || 'mock';\nconst csvContent = $json.body?.csv_content || '';\n\nfunction splitCsvLine(line) {\n  const values = [];\n  let current = '';\n  let inQuotes = false;\n  for (let i = 0; i < line.length; i += 1) {\n    const char = line[i];\n    const nextChar = line[i + 1];\n    if (char === '\"') {\n      if (inQuotes && nextChar === '\"') {\n        current += '\"';\n        i += 1;\n      } else {\n        inQuotes = !inQuotes;\n      }\n      continue;\n    }\n    if (char === ',' && !inQuotes) {\n      values.push(current);\n      current = '';\n      continue;\n    }\n    current += char;\n  }\n  values.push(current);\n  return values;\n}\n\nfunction normalizeHeader(header) {\n  return String(header || '').trim().toLowerCase().replace(/ /g, '_').replace(/-/g, '_');\n}\n\nconst lines = csvContent.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);\nif (lines.length < 2) {\n  return [{ json: { source_name: sourceName, provider, items: [] } }];\n}\n\nconst headers = splitCsvLine(lines[0]).map(normalizeHeader);\nconst items = lines.slice(1).map((line) => {\n  const values = splitCsvLine(line);\n  const row = {};\n  headers.forEach((header, index) => {\n    row[header] = (values[index] || '').trim();\n  });\n  const attachedDocuments = String(row.attached_documents || row.documents || row.pieces_jointes || '')\n    .split(',')\n    .map((item) => item.trim())\n    .filter(Boolean);\n  return {\n    source_file: sourceName,\n    channel: ['email', 'telephone', 'courrier', 'portail'].includes((row.channel || '').toLowerCase()) ? row.channel.toLowerCase() : 'email',\n    customer_id: row.customer_id || row.client_id || null,\n    contract_id: row.contract_id || row.case_id || row.dossier_id || row.claim_id || null,\n    provider,\n    claim_text: row.claim_text || row.message || row.description || '',\n    attached_documents: attachedDocuments\n  };\n});\n\nreturn [{ json: { source_name: sourceName, provider, items } }];"
       },
       "id": "Parse_CSV_To_Items",
       "name": "Parse CSV To Items",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -10,
+        -250,
         180
       ]
     },
@@ -69,8 +36,9 @@
         "method": "POST",
         "url": "http://127.0.0.1:8000/automations/claims-intake/batch",
         "sendBody": true,
+        "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "={\n  \"items\": $json.items\n}",
+        "jsonBody": "={{ {\n  items: $json.items || []\n} }}",
         "options": {}
       },
       "id": "Call_FastAPI_Batch_From_CSV",
@@ -78,107 +46,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        260,
-        180
-      ]
-    },
-    {
-      "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "source_name",
-              "value": "={{$('Parse CSV To Items').item.json.source_name}}"
-            },
-            {
-              "name": "imported_by",
-              "value": "={{$('Prepare CSV Request').item.json.imported_by}}"
-            }
-          ],
-          "json": [
-            {
-              "name": "batch_payload",
-              "value": "={{$json}}"
-            }
-          ]
-        }
-      },
-      "id": "Prepare_DB_Insert",
-      "name": "Prepare DB Insert",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        540,
-        180
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "select public.save_claim_batch(\n  $1,\n  $2,\n  $3::jsonb\n) as batch_id;",
-        "additionalFields": {
-          "queryParams": "={{ [$json.source_name, $json.imported_by, JSON.stringify($json.batch_payload)] }}"
-        }
-      },
-      "id": "Save_Batch_To_DB",
-      "name": "Save Batch To DB",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        800,
-        180
-      ],
-      "credentials": {
-        "postgres": {
-          "id": "replace-postgres-credential-id",
-          "name": "Supabase Local Postgres"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "keepOnlySet": true,
-        "values": {
-          "string": [
-            {
-              "name": "batch_id",
-              "value": "={{$json.batch_id || $json[0]?.batch_id || ''}}"
-            },
-            {
-              "name": "source_name",
-              "value": "={{$('Prepare DB Insert').item.json.source_name}}"
-            }
-          ],
-          "json": [
-            {
-              "name": "batch_payload",
-              "value": "={{$('Prepare DB Insert').item.json.batch_payload}}"
-            }
-          ]
-        }
-      },
-      "id": "Prepare_Response",
-      "name": "Prepare Response",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1060,
-        180
-      ]
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ { batch_id: $json.batch_id, source_name: $json.source_name, summary: $json.batch_payload.summary, item_count: $json.batch_payload.items.length } }}",
-        "options": {}
-      },
-      "id": "Respond_To_Full_Pipeline_Caller",
-      "name": "Respond To Full Pipeline Caller",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.2,
-      "position": [
-        1320,
+        20,
         180
       ]
     }
@@ -186,17 +54,6 @@
   "pinData": {},
   "connections": {
     "Webhook Full CSV Pipeline": {
-      "main": [
-        [
-          {
-            "node": "Prepare CSV Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare CSV Request": {
       "main": [
         [
           {
@@ -217,50 +74,6 @@
           }
         ]
       ]
-    },
-    "Call FastAPI Batch From CSV": {
-      "main": [
-        [
-          {
-            "node": "Prepare DB Insert",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare DB Insert": {
-      "main": [
-        [
-          {
-            "node": "Save Batch To DB",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Save Batch To DB": {
-      "main": [
-        [
-          {
-            "node": "Prepare Response",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare Response": {
-      "main": [
-        [
-          {
-            "node": "Respond To Full Pipeline Caller",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
     }
   },
   "active": false,
@@ -269,7 +82,7 @@
   },
   "versionId": "d2f7ef97-2ba8-4dc1-9b85-full-csv-claims-pipeline",
   "meta": {
-    "templateCredsSetupCompleted": false
+    "templateCredsSetupCompleted": true
   },
   "id": "mutuelleFullCsvClaimsPipeline"
 }

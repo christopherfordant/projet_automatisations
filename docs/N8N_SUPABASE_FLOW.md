@@ -5,6 +5,9 @@
 - `n8n/workflows/claims_intake_webhook.json`
 - `n8n/workflows/claims_intake_batch_webhook.json`
 - `n8n/workflows/document_completeness_webhook.json`
+- `n8n/workflows/maaf_prestations_sante_webhook.json`
+- `n8n/workflows/macif_reclamations_sensibles_webhook.json`
+- `n8n/workflows/maif_dossiers_urgents_sante_webhook.json`
 - `n8n/workflows/missing_info_followup_campaign.json`
 - `n8n/workflows/full_csv_claims_pipeline.json`
 - `supabase/schema/001_mutuelle_core.sql`
@@ -29,6 +32,23 @@ Le workflow `document_completeness_webhook.json`:
 1. recoit un dossier documentaire en `POST`;
 2. appelle `POST /automations/document-completeness`;
 3. renvoie directement la checklist et le message client genere.
+
+Les workflows entreprise cibles:
+
+- `maaf_prestations_sante_webhook.json`
+  - webhook specialise `POST /webhook/maaf/prestations-sante`
+  - force `carrier_profile=maaf`
+  - cible les besoins prestations sante, remboursements et devis
+
+- `macif_reclamations_sensibles_webhook.json`
+  - webhook specialise `POST /webhook/macif/reclamations-sensibles`
+  - force `carrier_profile=macif`
+  - cible les reclamations, retards et cas sensibles
+
+- `maif_dossiers_urgents_sante_webhook.json`
+  - webhook specialise `POST /webhook/maif/dossiers-urgents-sante`
+  - force `carrier_profile=maif`
+  - cible les dossiers urgents sante et l'accompagnement contextuel
 
 Le workflow `missing_info_followup_campaign.json`:
 
@@ -133,6 +153,16 @@ Pour la completude documentaire:
 
 1. `Import from file`
 2. choisir `n8n/workflows/document_completeness_webhook.json`
+3. sauvegarder le workflow
+4. l'activer si besoin
+
+Pour les workflows entreprise cibles:
+
+1. `Import from file`
+2. choisir le workflow cible:
+   - `n8n/workflows/maaf_prestations_sante_webhook.json`
+   - `n8n/workflows/macif_reclamations_sensibles_webhook.json`
+   - `n8n/workflows/maif_dossiers_urgents_sante_webhook.json`
 3. sauvegarder le workflow
 4. l'activer si besoin
 

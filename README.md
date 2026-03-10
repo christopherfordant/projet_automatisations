@@ -63,6 +63,9 @@ Workflows n8n ajoutes:
 - `claims intake` unitaire
 - `claims intake` batch
 - `document completeness`
+- `MAAF prestations sante`
+- `MACIF reclamations sensibles`
+- `MAIF dossiers urgents sante`
 - `missing info follow-up campaign`
 - `full csv claims pipeline`
 

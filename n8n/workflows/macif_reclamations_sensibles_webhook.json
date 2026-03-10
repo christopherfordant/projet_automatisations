@@ -1,0 +1,64 @@
+{
+  "name": "MACIF Reclamations Sensibles Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "macif/reclamations-sensibles",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "Webhook_MACIF_Reclamations",
+      "name": "Webhook MACIF Reclamations Sensibles",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        120
+      ],
+      "webhookId": "macif-reclamations-sensibles-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/claims-intake",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  carrier_profile: 'macif',\n  channel: $json.body.channel || 'email',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  web_lookup_enabled: $json.body.web_lookup_enabled ?? true,\n  claim_text: $json.body.claim_text || 'Reclamation sensible a analyser',\n  attached_documents: $json.body.attached_documents || []\n} }}",
+        "options": {}
+      },
+      "id": "Call_FastAPI_MACIF_Reclamations",
+      "name": "Call FastAPI MACIF Reclamations Sensibles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        120
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook MACIF Reclamations Sensibles": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI MACIF Reclamations Sensibles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4a6d2d9f-macif-reclamations-2026",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "macifReclamationsSensiblesWebhook"
+}

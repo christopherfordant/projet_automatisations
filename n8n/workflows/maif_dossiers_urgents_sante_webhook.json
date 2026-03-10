@@ -1,0 +1,64 @@
+{
+  "name": "MAIF Dossiers Urgents Sante Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "maif/dossiers-urgents-sante",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "Webhook_MAIF_Urgents",
+      "name": "Webhook MAIF Dossiers Urgents Sante",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        120
+      ],
+      "webhookId": "maif-dossiers-urgents-sante-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/claims-intake",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  carrier_profile: 'maif',\n  channel: $json.body.channel || 'telephone',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  web_lookup_enabled: $json.body.web_lookup_enabled ?? true,\n  claim_text: $json.body.claim_text || 'Dossier urgent sante a analyser',\n  attached_documents: $json.body.attached_documents || []\n} }}",
+        "options": {}
+      },
+      "id": "Call_FastAPI_MAIF_Urgents",
+      "name": "Call FastAPI MAIF Dossiers Urgents Sante",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        120
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook MAIF Dossiers Urgents Sante": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI MAIF Dossiers Urgents Sante",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "92ce5fa4-maif-urgents-sante-2026",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "maifDossiersUrgentsSanteWebhook"
+}

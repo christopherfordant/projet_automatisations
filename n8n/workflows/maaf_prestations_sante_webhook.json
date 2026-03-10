@@ -1,0 +1,64 @@
+{
+  "name": "MAAF Prestations Sante Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "maaf/prestations-sante",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "Webhook_MAAF_Prestations",
+      "name": "Webhook MAAF Prestations Sante",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        120
+      ],
+      "webhookId": "maaf-prestations-sante-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/claims-intake",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  carrier_profile: 'maaf',\n  channel: $json.body.channel || 'email',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  web_lookup_enabled: $json.body.web_lookup_enabled ?? true,\n  claim_text: $json.body.claim_text || '',\n  attached_documents: $json.body.attached_documents || []\n} }}",
+        "options": {}
+      },
+      "id": "Call_FastAPI_MAAF_Prestations",
+      "name": "Call FastAPI MAAF Prestations Sante",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        120
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook MAAF Prestations Sante": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI MAAF Prestations Sante",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7e8e7a2f-maaf-prestations-sante-2026",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "maafPrestationsSanteWebhook"
+}

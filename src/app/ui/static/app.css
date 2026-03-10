@@ -759,6 +759,45 @@ button:disabled {
     gap: 16px;
 }
 
+.workflow-wizard-panel {
+    margin-top: 24px;
+    display: grid;
+    gap: 16px;
+}
+
+.workflow-wizard {
+    display: grid;
+    gap: 16px;
+}
+
+.wizard-progress {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.wizard-chip {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #efe7d6;
+    color: var(--muted);
+    font: 700 0.82rem/1.2 "Segoe UI", sans-serif;
+}
+
+.wizard-chip.is-active {
+    background: var(--accent);
+    color: #fff;
+}
+
+.wizard-chip.is-done {
+    background: #dcebdc;
+    color: #1d5d3c;
+}
+
+.wizard-step.is-hidden {
+    display: none;
+}
+
 .workflow-guide-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

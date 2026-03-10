@@ -15,6 +15,16 @@ const carrierDocumentsList = document.getElementById("carrier-documents-list");
 const carrierRulesList = document.getElementById("carrier-rules-list");
 const carrierWorkflowsList = document.getElementById("carrier-workflows-list");
 const workflowGuideCards = document.getElementById("workflow-guide-cards");
+const workflowWizard = document.getElementById("workflow-wizard");
+const wizardProgress = document.getElementById("wizard-progress");
+const wizardModule = document.getElementById("wizard-module");
+const wizardGoal = document.getElementById("wizard-goal");
+const wizardContext = document.getElementById("wizard-context");
+const wizardDocuments = document.getElementById("wizard-documents");
+const wizardRecap = document.getElementById("wizard-recap");
+const wizardPrev = document.getElementById("wizard-prev");
+const wizardNext = document.getElementById("wizard-next");
+const wizardApply = document.getElementById("wizard-apply");
 const claimsModuleGuide = document.getElementById("claims-module-guide");
 const documentModuleGuide = document.getElementById("document-module-guide");
 const followupModuleGuide = document.getElementById("followup-module-guide");
@@ -95,6 +105,7 @@ let lastBatchItems = [];
 let manualStatusOverrides = {};
 let actionLogEntries = [];
 let selectedItemKey = "";
+let wizardStep = 0;
 const CARRIER_PROFILES = {
     generic: {
         badge: "Tissu PME niortais",
@@ -483,6 +494,13 @@ carrierProfileSelect.addEventListener("change", () => {
     renderCarrierProfile();
 });
 workflowGuideCards.addEventListener("click", handleWorkflowGuideClick);
+wizardPrev.addEventListener("click", () => moveWizard(-1));
+wizardNext.addEventListener("click", () => moveWizard(1));
+wizardApply.addEventListener("click", applyWizardToWorkflow);
+wizardModule.addEventListener("change", renderWizardRecap);
+wizardGoal.addEventListener("change", renderWizardRecap);
+wizardContext.addEventListener("input", renderWizardRecap);
+wizardDocuments.addEventListener("input", renderWizardRecap);
 claimText.addEventListener("input", autofillIdentifiers);
 csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
@@ -2263,6 +2281,8 @@ function renderCarrierProfile() {
     carrierProfileReadonly.value = profile.title;
     renderWorkflowGuides();
     renderModuleGuides();
+    renderWizardRecap();
+    renderWizardStep();
 }
 
 function renderWorkflowGuides() {
@@ -2370,6 +2390,69 @@ function handleWorkflowGuideClick(event) {
         }
         followupForm.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+}
+
+function moveWizard(offset) {
+    wizardStep = Math.max(0, Math.min(2, wizardStep + offset));
+    renderWizardStep();
+}
+
+function renderWizardStep() {
+    workflowWizard.querySelectorAll(".wizard-step").forEach((step) => {
+        step.classList.toggle("is-hidden", Number(step.dataset.step) !== wizardStep);
+    });
+
+    wizardProgress.querySelectorAll(".wizard-chip").forEach((chip, index) => {
+        chip.classList.toggle("is-active", index === wizardStep);
+        chip.classList.toggle("is-done", index < wizardStep);
+    });
+
+    wizardPrev.disabled = wizardStep === 0;
+    wizardNext.disabled = wizardStep === 2;
+    wizardApply.disabled = wizardStep !== 2;
+}
+
+function renderWizardRecap() {
+    const moduleLabel = getModuleLabel(wizardModule.value);
+    const goalLabel = wizardGoal.options[wizardGoal.selectedIndex]?.text || "-";
+    const documents = wizardDocuments.value || "Aucune piece declaree";
+    const context = wizardContext.value || "Aucun contexte saisi";
+
+    wizardRecap.innerHTML = `
+        <h3>${escapeHtml(moduleLabel)}</h3>
+        <p><strong>Objectif :</strong> ${escapeHtml(goalLabel)}</p>
+        <p><strong>Contexte :</strong> ${escapeHtml(context)}</p>
+        <p><strong>Pieces :</strong> ${escapeHtml(documents)}</p>
+    `;
+}
+
+function applyWizardToWorkflow() {
+    const documents = wizardDocuments.value;
+    const context = wizardContext.value;
+
+    if (wizardModule.value === "claims") {
+        fillExample.click();
+        form.claim_text.value = context || form.claim_text.value;
+        form.attached_documents.value = documents || form.attached_documents.value;
+        autofillIdentifiers();
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+    }
+
+    if (wizardModule.value === "document") {
+        fillDocumentExample.click();
+        documentForm.document_text.value = context || documentForm.document_text.value;
+        documentForm.attached_documents.value = documents || documentForm.attached_documents.value;
+        documentForm.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+    }
+
+    fillFollowupExample.click();
+    followupForm.context_text.value = context || followupForm.context_text.value;
+    followupForm.attached_documents.value = documents || followupForm.attached_documents.value;
+    followupForm.expected_documents.value =
+        wizardGoal.value === "missing" ? "piece manquante a preciser" : followupForm.expected_documents.value;
+    followupForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function addLogEntry({ action, source, caseRef, detail }) {

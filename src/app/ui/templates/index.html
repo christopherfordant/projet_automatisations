@@ -143,6 +143,70 @@
                 </div>
             </div>
 
+            <div class="workflow-wizard-panel">
+                <div>
+                    <p class="section-kicker">Assistant pas a pas</p>
+                    <h2>Construire un workflow sans remplir tout le formulaire</h2>
+                    <p class="hint">
+                        Reponds aux questions une par une. L'assistant choisit le module adapte,
+                        pre-remplit le bon ecran et te place directement au bon endroit.
+                    </p>
+                </div>
+
+                <div id="workflow-wizard" class="workflow-wizard">
+                    <div id="wizard-progress" class="wizard-progress">
+                        <span class="wizard-chip is-active">1. Besoin</span>
+                        <span class="wizard-chip">2. Contexte</span>
+                        <span class="wizard-chip">3. Preparation</span>
+                    </div>
+
+                    <div class="wizard-step" data-step="0">
+                        <label class="full">
+                            Quel est ton besoin principal ?
+                            <select id="wizard-module">
+                                <option value="claims">Qualifier et prioriser une demande</option>
+                                <option value="document">Verifier si un dossier est complet</option>
+                                <option value="followup">Preparer une relance administrative</option>
+                            </select>
+                        </label>
+
+                        <label class="full">
+                            Quel resultat veux-tu obtenir ?
+                            <select id="wizard-goal">
+                                <option value="tri">Savoir ou router le dossier</option>
+                                <option value="missing">Savoir ce qui manque</option>
+                                <option value="message">Obtenir un message pret a envoyer</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="wizard-step is-hidden" data-step="1">
+                        <label class="full">
+                            Decris la situation en une phrase
+                            <textarea id="wizard-context" rows="5" placeholder="Ex: un client relance une facture en attente et il manque encore le bon de commande."></textarea>
+                        </label>
+
+                        <label class="full">
+                            Pieces deja recues
+                            <input type="text" id="wizard-documents" placeholder="Ex: facture, devis signe">
+                        </label>
+                    </div>
+
+                    <div class="wizard-step is-hidden" data-step="2">
+                        <div id="wizard-recap" class="module-guide">
+                            <h3>Recapitulatif</h3>
+                            <p class="hint">L'assistant va pre-remplir le bon workflow avec tes reponses.</p>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" id="wizard-prev" class="secondary">Precedent</button>
+                        <button type="button" id="wizard-next">Suivant</button>
+                        <button type="button" id="wizard-apply" class="secondary">Appliquer au workflow</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="csv-panel">
                 <div>
                     <p class="section-kicker">Import CSV</p>

@@ -176,6 +176,7 @@ class AutomationService:
             missing_information=missing_information,
             category_label=self.CATEGORY_LABELS.get(category, category),
         )
+        operator_summary = self._flatten_message(str(ai_result["content"]))
         result = {
             "module": "claims_intake",
             "carrier_profile": company_profile.code,
@@ -196,9 +197,13 @@ class AutomationService:
             "documents_received": payload.attached_documents,
             "client_request_subject": client_request["subject"],
             "client_request_message": client_request["message"],
+            "client_request_message_display": client_request["message"],
+            "client_request_message_sections": self._split_message_sections(client_request["message"]),
             "web_lookup_used": payload.web_lookup_enabled,
             "verified_web_sources": verified_web_sources,
-            "operator_summary": self._flatten_message(str(ai_result["content"])),
+            "operator_summary": operator_summary,
+            "operator_summary_display": operator_summary,
+            "operator_summary_sections": self._split_message_sections(operator_summary),
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
         }
@@ -339,6 +344,7 @@ class AutomationService:
             message_tone=payload.message_tone,
             output_channel=payload.output_channel,
         )
+        operator_summary = self._flatten_message(str(ai_result["content"]))
 
         return {
             "module": "document_completeness",
@@ -363,9 +369,13 @@ class AutomationService:
             "output_channel": payload.output_channel,
             "client_request_subject": request_message["subject"],
             "client_request_message": request_message["message"],
+            "client_request_message_display": request_message["message"],
+            "client_request_message_sections": self._split_message_sections(request_message["message"]),
             "web_lookup_used": payload.web_lookup_enabled,
             "verified_web_sources": verified_web_sources,
-            "operator_summary": self._flatten_message(str(ai_result["content"])),
+            "operator_summary": operator_summary,
+            "operator_summary_display": operator_summary,
+            "operator_summary_sections": self._split_message_sections(operator_summary),
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
         }
@@ -782,7 +792,19 @@ class AutomationService:
     @staticmethod
     def _flatten_message(message: str) -> str:
         lines = [line.strip() for line in message.splitlines() if line.strip()]
-        return " | ".join(lines)
+        flattened = " ".join(lines)
+        flattened = re.sub(r"\s+", " ", flattened).strip()
+        return flattened
+
+    @staticmethod
+    def _split_message_sections(message: str) -> list[str]:
+        if not message:
+            return []
+        return [
+            section.strip()
+            for section in re.split(r"(?<=[.!?])\s+|(?<=:)\s+", message)
+            if section.strip()
+        ]
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

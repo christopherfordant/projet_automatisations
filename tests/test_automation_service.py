@@ -82,6 +82,8 @@ def test_claims_intake_missing_info_generates_client_message() -> None:
     assert "Informations manquantes" in result["client_request_subject"]
     assert "Numero dossier" in result["client_request_message"]
     assert "Copie de facture" in result["client_request_message"]
+    assert result["client_request_message_display"] == result["client_request_message"]
+    assert result["client_request_message_sections"]
 
 
 def test_document_completeness_returns_missing_required_documents() -> None:
@@ -137,6 +139,7 @@ def test_document_completeness_can_be_ready() -> None:
     assert "Dossier complet" in result["client_request_subject"]
     assert "merci pour votre envoi" in result["client_request_message"].lower()
     assert "salutations distinguees" in result["client_request_message"].lower()
+    assert result["operator_summary_display"] == result["operator_summary"]
 
 
 def test_claims_intake_can_attach_verified_web_sources(monkeypatch) -> None:

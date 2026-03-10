@@ -353,7 +353,7 @@ documentForm.addEventListener("submit", async (event) => {
             data.message_tone,
             data.output_channel,
             data.client_request_subject,
-            data.client_request_message,
+            data.client_request_message_display || data.client_request_message,
         );
         renderVerifiedWebSources(documentWebSources, data.verified_web_sources || []);
         documentOutput.textContent = JSON.stringify(data, null, 2);
@@ -452,7 +452,7 @@ form.addEventListener("submit", async (event) => {
         });
         renderMissing(data.missing_information_labels);
         renderVerifiedWebSources(claimsWebSources, data.verified_web_sources || []);
-        operatorSummary.textContent = data.operator_summary;
+        operatorSummary.textContent = data.operator_summary_display || data.operator_summary;
         rawOutput.textContent = JSON.stringify(data, null, 2);
     } catch (error) {
         setSummary({

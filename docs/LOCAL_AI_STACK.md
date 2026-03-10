@@ -15,6 +15,7 @@ Faire evoluer l'application actuelle vers une vraie infrastructure locale gratui
 
 - `n8n`: entree des flux, webhooks, horaires, routage, appels HTTP vers l'API metier.
 - `FastAPI`: intelligence metier stable, scoring, checklist documentaire, generation de messages.
+- `SQLite local`: persistance legere de l'etat operateur et reprise de session sans infrastructure externe.
 - `Ollama`: inference locale compatible API OpenAI.
 - `Qdrant`: similarite documentaire, recherche de cas proches, RAG local.
 - `Supabase`: tables operateur, historisation, auth, stockage documentaire, realtime si besoin.
@@ -89,6 +90,11 @@ Le depot contient deja un mode simple `dossier surveille`:
 ```powershell
 .\scripts\watch_claims_drop_folder.ps1
 ```
+
+Et une persistance locale legere pour le poste operateur via:
+
+- `GET /automations/operator-state`
+- `PUT /automations/operator-state`
 
 ## Outils locaux gratuits conseilles
 

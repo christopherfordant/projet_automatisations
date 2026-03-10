@@ -50,3 +50,18 @@ class ClaimIntakeRequest(BaseModel):
 
 class ClaimIntakeBatchRequest(BaseModel):
     items: list[ClaimIntakeRequest] = Field(..., min_length=1, description="Liste des dossiers a traiter")
+
+
+class OperatorActionLogEntry(BaseModel):
+    timestamp: str
+    action: str
+    source: str
+    caseRef: str
+    detail: str
+
+
+class OperatorStatePayload(BaseModel):
+    manual_status_overrides: dict[str, dict[str, str]] = Field(default_factory=dict)
+    action_log_entries: list[OperatorActionLogEntry] = Field(default_factory=list)
+    last_batch_items: list[dict[str, object]] = Field(default_factory=list)
+    selected_item_key: str = Field(default="")

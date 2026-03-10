@@ -217,9 +217,8 @@ const STORAGE_KEYS = {
     actionLog: "mutuelle_ai_platform.action_log_entries",
 };
 
-loadPersistedState();
 renderCarrierProfile();
-renderActionLog();
+void initializeOperatorState();
 void loadStackHealth();
 void loadDropzoneStatus();
 
@@ -1456,6 +1455,7 @@ function resetBatchVisuals(status = "-") {
     manualStatusOverrides = {};
     persistOverrides();
     selectedItemKey = "";
+    void persistOperatorState();
     exportBatchButton.disabled = true;
     exportMissingActionsButton.disabled = true;
     filterPriority.value = "";
@@ -1663,6 +1663,7 @@ function handleBatchRowClick(event) {
 
     renderCaseDetail(item);
     highlightSelectedRow();
+    void persistOperatorState();
 }
 
 function handleMissingActionsClick(event) {
@@ -1869,27 +1870,109 @@ function clearActionLog() {
     renderActionLog();
 }
 
-function loadPersistedState() {
+async function initializeOperatorState() {
+    await loadPersistedState();
+    renderActionLog();
+    restoreOperatorState();
+}
+
+function restoreOperatorState() {
+    if (!lastBatchItems.length) {
+        return;
+    }
+
+    renderBatchSummary(buildBatchSummaryFromItems(lastBatchItems));
+    renderOperatorDashboard(lastBatchItems);
+    renderBatchTable(lastBatchItems);
+    renderMissingActionsPanel(lastBatchItems);
+    hydrateCategoryFilter(lastBatchItems);
+    hydrateStatusFilter(lastBatchItems);
+    exportBatchButton.disabled = lastBatchItems.length === 0;
+    exportMissingActionsButton.disabled = !lastBatchItems.some((item) => item.missing_information.length);
+    batchOutput.textContent = "Etat operateur restaure depuis le stockage local backend.";
+    applyBatchFilters();
+
+    const restoredItem =
+        lastBatchItems.find((item) => buildItemKey(item) === selectedItemKey) || lastBatchItems[0];
+    if (restoredItem) {
+        selectedItemKey = buildItemKey(restoredItem);
+        renderCaseDetail(restoredItem);
+        highlightSelectedRow();
+    }
+}
+
+function buildBatchSummaryFromItems(items) {
+    return {
+        total_items: items.length,
+        high_priority: items.filter((item) => item.priority === "high").length,
+        critical_attention: items.filter((item) => item.attention_level === "critical").length,
+        missing_information_cases: items.filter((item) => item.missing_information?.length).length,
+        duplicate_suspicions: items.filter((item) => item.duplicate_suspected).length,
+    };
+}
+
+async function loadPersistedState() {
+    try {
+        const response = await fetch("/automations/operator-state");
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const storedState = await response.json();
+        manualStatusOverrides = storedState.manual_status_overrides || {};
+        actionLogEntries = storedState.action_log_entries || [];
+        lastBatchItems = storedState.last_batch_items || [];
+        selectedItemKey = storedState.selected_item_key || "";
+        persistLocalFallback();
+        return;
+    } catch {}
+
     try {
         const storedOverrides = localStorage.getItem(STORAGE_KEYS.overrides);
         const storedLog = localStorage.getItem(STORAGE_KEYS.actionLog);
 
         manualStatusOverrides = storedOverrides ? JSON.parse(storedOverrides) : {};
         actionLogEntries = storedLog ? JSON.parse(storedLog) : [];
+        lastBatchItems = [];
+        selectedItemKey = "";
     } catch {
         manualStatusOverrides = {};
         actionLogEntries = [];
+        lastBatchItems = [];
+        selectedItemKey = "";
     }
 }
 
 function persistOverrides() {
-    try {
-        localStorage.setItem(STORAGE_KEYS.overrides, JSON.stringify(manualStatusOverrides));
-    } catch {}
+    persistLocalFallback();
+    void persistOperatorState();
 }
 
 function persistActionLog() {
+    persistLocalFallback();
+    void persistOperatorState();
+}
+
+function persistLocalFallback() {
     try {
+        localStorage.setItem(STORAGE_KEYS.overrides, JSON.stringify(manualStatusOverrides));
         localStorage.setItem(STORAGE_KEYS.actionLog, JSON.stringify(actionLogEntries));
+    } catch {}
+}
+
+async function persistOperatorState() {
+    try {
+        await fetch("/automations/operator-state", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                manual_status_overrides: manualStatusOverrides,
+                action_log_entries: actionLogEntries,
+                last_batch_items: lastBatchItems,
+                selected_item_key: selectedItemKey,
+            }),
+        });
     } catch {}
 }

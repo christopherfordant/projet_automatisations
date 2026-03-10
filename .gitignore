@@ -25,6 +25,7 @@ fastapi.stdout.log
 fastapi.stderr.log
 node-v22.19.0-win-x64.zip
 node-v22.19.0-win-x64/
+local_data/
 dropzones/incoming/*
 dropzones/archive/*
 dropzones/error/*

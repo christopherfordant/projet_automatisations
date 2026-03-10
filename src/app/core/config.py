@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     n8n_base_url: str = Field(default="http://127.0.0.1:5678", alias="N8N_BASE_URL")
     postgres_host: str = Field(default="127.0.0.1", alias="POSTGRES_HOST")
     postgres_port: int = Field(default=5432, alias="POSTGRES_PORT")
+    local_state_db_path: str = Field(
+        default="local_data/mutuelle_ai_platform.db",
+        alias="LOCAL_STATE_DB_PATH",
+    )
     web_lookup_timeout_seconds: float = Field(default=12.0, alias="WEB_LOOKUP_TIMEOUT_SECONDS")
     web_lookup_allowed_domains: str = Field(
         default="ameli.fr,service-public.fr,economie.gouv.fr",

@@ -206,6 +206,27 @@ Configuration associee:
 
 - `WEB_LOOKUP_TIMEOUT_SECONDS`
 - `WEB_LOOKUP_ALLOWED_DOMAINS`
+- `LOCAL_STATE_DB_PATH`
+
+## Persistance operateur locale
+
+Le poste operateur n'est plus limite au navigateur.
+
+L'application sauvegarde maintenant localement dans SQLite:
+
+- les overrides de statut;
+- le journal d'actions operateur;
+- le dernier batch traite;
+- le dossier selectionne.
+
+Configuration associee:
+
+- `LOCAL_STATE_DB_PATH`
+
+API locale ajoutee:
+
+- `GET /automations/operator-state`
+- `PUT /automations/operator-state`
 
 L'interface web propose aussi une zone `Depot surveille` qui:
 

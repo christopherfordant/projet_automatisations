@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
+from app.api.routes import automations as automations_route_module
 from app.main import app
+from app.services.local_state_store import LocalStateStore
 
 
 client = TestClient(app)
@@ -133,3 +135,47 @@ def test_claims_intake_complaint_is_marked_for_review() -> None:
     payload = response.json()
     assert payload["business_status"] == "to_review"
     assert payload["business_status_label"] == "A revoir"
+
+
+def test_operator_state_can_be_saved_and_loaded(tmp_path, monkeypatch) -> None:
+    store = LocalStateStore(str(tmp_path / "operator_state.db"))
+    monkeypatch.setattr(automations_route_module, "state_store", store)
+
+    payload = {
+        "manual_status_overrides": {
+            "Formulaire::CL-1::DOS-1::Texte": {"value": "blocked", "label": "Bloque"}
+        },
+        "action_log_entries": [
+            {
+                "timestamp": "10/03/2026 12:00:00",
+                "action": "Batch lance",
+                "source": "2 ligne(s)",
+                "caseRef": "2 dossier(s)",
+                "detail": "1 prioritaire(s), 1 incomplet(s)",
+            }
+        ],
+        "last_batch_items": [
+            {
+                "customer_id": "CL-1",
+                "contract_id": "DOS-1",
+                "claim_text": "Texte",
+                "priority": "high",
+                "missing_information": [],
+            }
+        ],
+        "selected_item_key": "Formulaire::CL-1::DOS-1::Texte",
+    }
+
+    save_response = client.put("/automations/operator-state", json=payload)
+    assert save_response.status_code == 200
+    saved = save_response.json()
+    assert saved["manual_status_overrides"] == payload["manual_status_overrides"]
+    assert saved["selected_item_key"] == payload["selected_item_key"]
+    assert saved["saved_at"]
+
+    load_response = client.get("/automations/operator-state")
+    assert load_response.status_code == 200
+    loaded = load_response.json()
+    assert loaded["manual_status_overrides"] == payload["manual_status_overrides"]
+    assert loaded["action_log_entries"][0]["action"] == "Batch lance"
+    assert loaded["last_batch_items"][0]["contract_id"] == "DOS-1"

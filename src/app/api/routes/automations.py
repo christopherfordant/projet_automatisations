@@ -10,12 +10,15 @@ from app.schemas.automation import (
     ClaimIntakeRequest,
     DocumentCompletenessRequest,
     DocumentAnalysisRequest,
+    OperatorStatePayload,
 )
 from app.services.automation_service import AutomationService
+from app.services.local_state_store import LocalStateStore
 
 
 router = APIRouter(prefix="/automations", tags=["automations"])
 service = AutomationService()
+state_store = LocalStateStore()
 
 
 @router.post("/intake")
@@ -73,3 +76,13 @@ async def company_workflows(profile: str | None = None) -> dict[str, object]:
             for item in COMPANY_WORKFLOW_CATALOG.values()
         ]
     }
+
+
+@router.get("/operator-state")
+async def operator_state() -> dict[str, object]:
+    return state_store.load_operator_state()
+
+
+@router.put("/operator-state")
+async def save_operator_state(payload: OperatorStatePayload) -> dict[str, object]:
+    return state_store.save_operator_state(payload.model_dump())

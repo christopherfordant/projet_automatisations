@@ -13,6 +13,15 @@ def test_healthcheck() -> None:
     assert payload["status"] == "ok"
 
 
+def test_n8n_stack_healthcheck_returns_service_map() -> None:
+    response = client.get("/health/n8n-stack")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] in {"ok", "degraded"}
+    assert payload["services"]["fastapi"]["status"] == "up"
+    assert set(payload["services"]) == {"fastapi", "n8n", "ollama", "postgres"}
+
+
 def test_home_page_is_available() -> None:
     response = client.get("/")
     assert response.status_code == 200

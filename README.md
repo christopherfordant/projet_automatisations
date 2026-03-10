@@ -66,6 +66,9 @@ Workflows n8n ajoutes:
 - `MAAF prestations sante`
 - `MACIF reclamations sensibles`
 - `MAIF dossiers urgents sante`
+- `MAAF document completeness`
+- `MACIF document completeness`
+- `MAIF document completeness`
 - `missing info follow-up campaign`
 - `full csv claims pipeline`
 

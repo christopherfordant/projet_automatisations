@@ -1,0 +1,64 @@
+{
+  "name": "MAAF Document Completeness Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "maaf/document-completeness",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "Webhook_MAAF_Document_Completeness",
+      "name": "Webhook MAAF Document Completeness",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        120
+      ],
+      "webhookId": "maaf-document-completeness-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/document-completeness",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  carrier_profile: 'maaf',\n  document_type: $json.body.document_type || 'reimbursement',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  web_lookup_enabled: $json.body.web_lookup_enabled ?? true,\n  message_tone: $json.body.message_tone || 'neutral',\n  output_channel: $json.body.output_channel || 'email',\n  document_text: $json.body.document_text || '',\n  attached_documents: $json.body.attached_documents || []\n} }}",
+        "options": {}
+      },
+      "id": "Call_FastAPI_MAAF_Document_Completeness",
+      "name": "Call FastAPI MAAF Document Completeness",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        120
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook MAAF Document Completeness": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI MAAF Document Completeness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "maaf-document-completeness-2026",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "maafDocumentCompletenessWebhook"
+}

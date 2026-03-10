@@ -634,17 +634,21 @@ class AutomationService:
             if not missing_required_labels:
                 return {
                     "subject": "",
-                    "message": (
+                    "message": AutomationService._flatten_message(
+                        (
                         f"Dossier {reference} complet pour {profile_label.lower()}. "
                         "Instruction en cours."
+                        )
                     ),
                 }
             return {
                 "subject": "",
-                "message": (
+                "message": AutomationService._flatten_message(
+                    (
                     f"Dossier {reference}: merci d'envoyer "
                     f"{', '.join(missing_required_labels)}. "
                     f"{'Sans ces pieces, dossier bloque.' if readiness_status == 'blocked' else 'A reception, dossier finalisable.'}"
+                    )
                 ),
             }
 
@@ -665,12 +669,14 @@ class AutomationService:
             }
             return {
                 "subject": f"Dossier complet - {reference}",
-                "message": (
+                "message": AutomationService._flatten_message(
+                    (
                     f"{openings.get(tone, openings['neutral'])}\n\n"
                     f"Votre dossier {reference} est considere comme complet pour le traitement "
                     f"de la demande de type {profile_label.lower()}.\n"
                     f"{progress_lines.get(tone, progress_lines['neutral'])}\n\n"
                     f"{closings.get(channel, closings['email'])}"
+                    )
                 ),
             }
 
@@ -723,7 +729,9 @@ class AutomationService:
                 if channel == "sms"
                 else f"Pieces manquantes pour votre dossier - {reference}"
             ),
-            "message": intro_by_tone.get(tone, intro_by_tone["neutral"]) + missing_lines + outro,
+            "message": AutomationService._flatten_message(
+                intro_by_tone.get(tone, intro_by_tone["neutral"]) + missing_lines + outro
+            ),
         }
 
     @classmethod
@@ -739,25 +747,34 @@ class AutomationService:
         if not missing_labels:
             return {
                 "subject": f"Dossier complet - {reference}",
-                "message": (
+                "message": cls._flatten_message(
+                    (
                     "Bonjour,\n\n"
                     f"Votre dossier {reference} relatif a {category_label.lower()} peut maintenant etre instruit.\n\n"
                     "Cordialement,\nService gestion"
+                    )
                 ),
             }
 
         bullet_list = "\n".join(f"- {label}" for label in missing_labels)
         return {
             "subject": f"Informations manquantes pour votre dossier - {reference}",
-            "message": (
+            "message": cls._flatten_message(
+                (
                 "Bonjour,\n\n"
                 f"Pour poursuivre le traitement de votre dossier {reference} relatif a {category_label.lower()}, "
                 "merci de nous transmettre les elements suivants :\n"
                 f"{bullet_list}\n\n"
                 "Le dossier restera en attente jusqu'a reception de ces informations.\n\n"
                 "Cordialement,\nService gestion"
+                )
             ),
         }
+
+    @staticmethod
+    def _flatten_message(message: str) -> str:
+        lines = [line.strip() for line in message.splitlines() if line.strip()]
+        return " | ".join(lines)
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

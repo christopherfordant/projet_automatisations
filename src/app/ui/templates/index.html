@@ -21,6 +21,42 @@
             </p>
         </section>
 
+        <section class="panel stack-panel">
+            <div class="stack-panel-head">
+                <div>
+                    <p class="section-kicker">Etat de la stack</p>
+                    <h2>Verifier l'infrastructure locale</h2>
+                    <p class="hint">
+                        Controle rapide de l'etat de FastAPI, n8n, Ollama et Postgres.
+                    </p>
+                </div>
+                <div class="actions">
+                    <button type="button" id="refresh-stack-status" class="secondary">Actualiser l'etat</button>
+                </div>
+            </div>
+
+            <div id="stack-health-summary" class="batch-summary">
+                <div class="metric">
+                    <span>Statut global</span>
+                    <strong>-</strong>
+                </div>
+                <div class="metric">
+                    <span>Services actifs</span>
+                    <strong>-</strong>
+                </div>
+            </div>
+
+            <div id="stack-health-grid" class="stack-health-grid">
+                <article class="stack-service-card">
+                    <div class="stack-service-head">
+                        <span class="stack-dot stack-dot-unknown"></span>
+                        <strong>Chargement...</strong>
+                    </div>
+                    <p class="hint">Verification en cours.</p>
+                </article>
+            </div>
+        </section>
+
         <section class="panel">
             <div class="carrier-panel">
                 <div>

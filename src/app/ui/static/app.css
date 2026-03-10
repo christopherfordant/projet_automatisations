@@ -73,6 +73,69 @@ h1 {
     margin: 18px 0 22px;
 }
 
+.stack-panel {
+    display: grid;
+    gap: 18px;
+}
+
+.stack-panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.stack-health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.stack-service-card {
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(216, 207, 190, 0.9);
+    background: #fff;
+}
+
+.stack-service-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font: 700 0.95rem/1.2 "Segoe UI", sans-serif;
+}
+
+.stack-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.stack-dot-up {
+    background: var(--good);
+    box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.15);
+}
+
+.stack-dot-down {
+    background: #d92d20;
+    box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.12);
+}
+
+.stack-dot-unknown {
+    background: var(--muted);
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.12);
+}
+
+.stack-status-label {
+    margin-left: auto;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font: 700 0.72rem/1.2 "Segoe UI", sans-serif;
+}
+
 .carrier-panel {
     display: grid;
     gap: 18px;

@@ -10,7 +10,10 @@ const carrierFocusList = document.getElementById("carrier-focus-list");
 const carrierDocumentsList = document.getElementById("carrier-documents-list");
 const carrierRulesList = document.getElementById("carrier-rules-list");
 const fillExample = document.getElementById("fill-example");
+const refreshStackStatusButton = document.getElementById("refresh-stack-status");
 const summary = document.getElementById("summary");
+const stackHealthSummary = document.getElementById("stack-health-summary");
+const stackHealthGrid = document.getElementById("stack-health-grid");
 const documentSummary = document.getElementById("document-summary");
 const documentRequestSummary = document.getElementById("document-request-summary");
 const attentionSummary = document.getElementById("attention-summary");
@@ -189,6 +192,7 @@ const STORAGE_KEYS = {
 loadPersistedState();
 renderCarrierProfile();
 renderActionLog();
+void loadStackHealth();
 void loadDropzoneStatus();
 
 fillExample.addEventListener("click", () => {
@@ -233,6 +237,9 @@ batchTableBody.addEventListener("change", handleStatusOverrideChange);
 batchTableBody.addEventListener("click", handleBatchRowClick);
 missingActionsPanel.addEventListener("click", handleMissingActionsClick);
 clearLogButton.addEventListener("click", clearActionLog);
+refreshStackStatusButton.addEventListener("click", () => {
+    void loadStackHealth();
+});
 csvDropzone.addEventListener("dragenter", activateDropzone);
 csvDropzone.addEventListener("dragover", activateDropzone);
 csvDropzone.addEventListener("dragleave", deactivateDropzone);
@@ -581,6 +588,89 @@ function formatCheckedAt(value) {
         return value;
     }
     return date.toLocaleString("fr-FR");
+}
+
+async function loadStackHealth() {
+    stackHealthSummary.innerHTML = `
+        <div class="metric">
+            <span>Statut global</span>
+            <strong>Chargement...</strong>
+        </div>
+        <div class="metric">
+            <span>Services actifs</span>
+            <strong>-</strong>
+        </div>
+    `;
+    stackHealthGrid.innerHTML = `
+        <article class="stack-service-card">
+            <div class="stack-service-head">
+                <span class="stack-dot stack-dot-unknown"></span>
+                <strong>Chargement...</strong>
+            </div>
+            <p class="hint">Verification en cours.</p>
+        </article>
+    `;
+
+    try {
+        const response = await fetch("/health/n8n-stack");
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(JSON.stringify(data));
+        }
+
+        const services = Object.entries(data.services || {});
+        const upCount = services.filter(([, item]) => item.status === "up").length;
+
+        stackHealthSummary.innerHTML = `
+            <div class="metric">
+                <span>Statut global</span>
+                <strong>${escapeHtml(data.status || "-")}</strong>
+            </div>
+            <div class="metric">
+                <span>Services actifs</span>
+                <strong>${escapeHtml(`${upCount}/${services.length}`)}</strong>
+            </div>
+        `;
+
+        stackHealthGrid.innerHTML = services
+            .map(([name, item]) => {
+                const isUp = item.status === "up";
+                const dotClass = isUp ? "stack-dot-up" : "stack-dot-down";
+                const detail = item.error || item.target || "-";
+                return `
+                    <article class="stack-service-card">
+                        <div class="stack-service-head">
+                            <span class="stack-dot ${dotClass}"></span>
+                            <strong>${escapeHtml(name)}</strong>
+                            <span class="stack-status-label">${escapeHtml(item.status || "-")}</span>
+                        </div>
+                        <p class="hint">${escapeHtml(detail)}</p>
+                    </article>
+                `;
+            })
+            .join("");
+    } catch (error) {
+        stackHealthSummary.innerHTML = `
+            <div class="metric">
+                <span>Statut global</span>
+                <strong>Erreur</strong>
+            </div>
+            <div class="metric">
+                <span>Services actifs</span>
+                <strong>-</strong>
+            </div>
+        `;
+        stackHealthGrid.innerHTML = `
+            <article class="stack-service-card">
+                <div class="stack-service-head">
+                    <span class="stack-dot stack-dot-down"></span>
+                    <strong>Verification impossible</strong>
+                </div>
+                <p class="hint">${escapeHtml(String(error))}</p>
+            </article>
+        `;
+    }
 }
 
 function activateDropFolderZone(event) {

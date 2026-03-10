@@ -27,7 +27,7 @@ def test_n8n_stack_healthcheck_returns_service_map() -> None:
 def test_home_page_is_available() -> None:
     response = client.get("/")
     assert response.status_code == 200
-    assert "Tester le module claims intake sans coder" in response.text
+    assert "Tester des workflows back-office sans coder" in response.text
 
 
 def test_claims_intake_returns_structured_response() -> None:

@@ -77,117 +77,144 @@ let actionLogEntries = [];
 let selectedItemKey = "";
 const CARRIER_PROFILES = {
     generic: {
-        badge: "Pole niortais",
-        title: "Base commune MAAF, MACIF, MAIF",
-        description: "Tronc commun pour tester l'analyse d'une demande dans l'ecosysteme mutualiste de Niort.",
+        badge: "Tissu PME niortais",
+        title: "Base commune TPE/PME de Niort",
+        description: "Tronc commun pour tester l'analyse d'une demande administrative, commerciale ou back-office dans l'ecosysteme niortais.",
         focus: [
-            "Tri des demandes entrantes sante",
-            "Verification des pieces et references adherent",
-            "Routage vers le bon service de gestion",
+            "Tri des demandes entrantes",
+            "Verification des pieces et references",
+            "Routage vers le bon interlocuteur ou service",
         ],
-        documents: ["Facture", "Numero adherent", "Reference dossier", "Canal d'origine"],
+        documents: ["Facture ou devis", "Reference dossier", "Piece justificative", "Canal d'origine"],
         rules: [
             "Prioriser les dossiers urgents",
             "Bloquer les dossiers incomplets",
             "Remonter les reclamations a revoir",
         ],
         workflows: [
-            "Qualification reception mutualiste",
+            "Tri administratif entrant",
             "Controle de completude documentaire",
-            "Pilotage operateur transverse",
+            "Pilotage back-office transverse",
         ],
         sample: {
             channel: "email",
             claim_text:
-                "Bonjour, client CL-2048, dossier DOS-7788, j'ai une relance urgente pour un remboursement de facture en retard. Je n'ai toujours pas de retour sur mon dossier.",
-            attached_documents: "facture dentaire",
+                "Bonjour, client CL-2048, dossier DOS-7788, je relance une facture en attente de validation depuis plusieurs jours. Je n'ai toujours pas de retour.",
+            attached_documents: "facture, bon de commande",
         },
     },
-    maaf: {
-        badge: "Mutuelle cible MAAF",
-        title: "Remboursement et devis standardises",
-        description: "Profil oriente remboursements, devis sante et suivi de pieces classiques.",
+    service_b2b: {
+        badge: "Profil Services B2B",
+        title: "Support client et back-office services",
+        description: "Profil centre sur le tri des mails clients, les pieces manquantes, le SAV et les relances administratives.",
         focus: [
-            "Suivi de remboursement",
-            "Qualification de devis optique et dentaire",
-            "Detection des relances client",
+            "Demandes clients et SAV",
+            "Pieces manquantes",
+            "Reclamations et relances",
         ],
-        documents: ["Facture acquittee", "Devis", "Numero adherent"],
+        documents: ["Devis", "Facture", "Bon d'intervention", "Reference client"],
         rules: [
-            "Orienter vite les relances de remboursement",
-            "Controler la presence d'une facture ou d'un devis",
-            "Basculer les urgences en file prioritaire",
+            "Aiguiller vite les mails entrants",
+            "Relancer les pieces manquantes",
+            "Remonter les demandes sensibles ou urgentes",
         ],
         workflows: [
-            "Pre-instruction prestations sante",
-            "Controle devis optique et dentaire",
-            "Priorisation des relances remboursement",
-        ],
-        sample: {
-            channel: "portail",
-            claim_text:
-                "Bonjour, adherent MAAF CL-6721, dossier DOS-5510, je relance un remboursement optique urgent depose sur le portail avec un devis et une facture.",
-            attached_documents: "devis optique, facture optique",
-        },
-    },
-    macif: {
-        badge: "Mutuelle cible MACIF",
-        title: "Reclamations et suivi relation adherent",
-        description: "Profil centre sur les reclamations de delai, la satisfaction et les cas a reviser.",
-        focus: [
-            "Reclamations de delai",
-            "Demandes de suivi adherent",
-            "Escalade des cas sensibles",
-        ],
-        documents: ["Courrier de reclamation", "Numero dossier", "Historique echanges"],
-        rules: [
-            "Faire remonter les reclamations en revue humaine",
-            "Conserver la trace des delais annonces",
-            "Identifier les demandes repetitives",
-        ],
-        workflows: [
-            "Triage des reclamations sensibles",
-            "Distribution des activites entrantes",
-            "Suivi des retards et relances adherents",
+            "Tri des demandes clients et SAV",
+            "Relances de pieces manquantes",
+            "Gestion des reclamations clients",
         ],
         sample: {
             channel: "email",
             claim_text:
-                "Bonjour, client MACIF CL-8812, dossier REC-3201, je depose une reclamation car mon remboursement est en attente depuis trois semaines sans reponse.",
-            attached_documents: "courrier reclamation, historique echanges",
+                "Bonjour, client CL-6721, dossier DOS-5510, je relance l'etat de mon devis signe. Il manque peut-etre encore des pieces pour finaliser.",
+            attached_documents: "devis signe",
         },
     },
-    maif: {
-        badge: "Mutuelle cible MAIF",
-        title: "Accompagnement et traitement contextualise",
-        description: "Profil utile pour les dossiers demandant plus de contexte, d'accompagnement et de coordination.",
+    immobilier_syndic: {
+        badge: "Profil Immobilier / Syndic",
+        title: "Dossiers locatifs et suivi immeuble",
+        description: "Profil adapte aux agences, syndics et gestionnaires avec devis, relances, sinistres et pieces de dossier.",
         focus: [
-            "Demandes contextualisees",
-            "Hospitalisation et cas urgents",
-            "Suivi de dossier avec plusieurs echanges",
+            "Dossiers locataires et proprietaires",
+            "Sinistres et urgences",
+            "Pieces manquantes sur les dossiers",
         ],
-        documents: ["Compte rendu", "Facture", "Reference contrat"],
+        documents: ["Etat des lieux", "Devis travaux", "Photo", "Bail ou reference lot"],
         rules: [
-            "Valoriser les signaux d'urgence",
-            "Consolider les pieces disperses",
-            "Verifier les references de contrat avant routage",
+            "Prioriser les urgences techniques",
+            "Relancer les dossiers incomplets",
+            "Centraliser les echanges locataires et proprietaires",
         ],
         workflows: [
-            "Accompagnement contextuel du sociataire",
-            "Prise en charge des dossiers urgents sante",
-            "Coordination des dossiers a echanges multiples",
+            "Suivi des dossiers locatifs",
+            "Relances sur dossiers incomplets",
+            "Priorisation des sinistres et urgences",
         ],
         sample: {
-            channel: "telephone",
+            channel: "email",
             claim_text:
-                "Bonjour, assure MAIF CL-5504, dossier HOSP-8122, j'appelle pour une hospitalisation recente et une prise en charge a verifier rapidement.",
-            attached_documents: "compte rendu hospitalisation, facture clinique",
+                "Bonjour, dossier DOS-3201, le locataire signale une fuite urgente. Je joins le devis mais il manque encore des pieces pour lancer l'intervention.",
+            attached_documents: "devis travaux, photo degat",
+        },
+    },
+    negoce_adv: {
+        badge: "Profil Negoce / ADV",
+        title: "Commandes, devis et facturation clients",
+        description: "Profil adapte aux PME de negoce, ADV et commerce B2B avec commandes, relances et litiges.",
+        focus: [
+            "Commandes et devis",
+            "Facturation et relances",
+            "Litiges de livraison",
+        ],
+        documents: ["Bon de commande", "Devis", "Facture", "BL ou preuve de livraison"],
+        rules: [
+            "Relancer les paiements ou validations",
+            "Prioriser les litiges clients",
+            "Verifier les references commande avant traitement",
+        ],
+        workflows: [
+            "Preparation des commandes et demandes entrantes",
+            "Suivi facturation et relances clients",
+            "Gestion des litiges commandes et livraisons",
+        ],
+        sample: {
+            channel: "email",
+            claim_text:
+                "Bonjour, client CL-5504, commande CMD-8122, je conteste une facture sur une livraison incomplete et j'attends un retour rapide.",
+            attached_documents: "facture, bon de livraison",
+        },
+    },
+    cabinet_gestion: {
+        badge: "Profil Cabinet de gestion",
+        title: "Preparation et relance de dossiers administratifs",
+        description: "Profil adapte aux cabinets de gestion, assistance administrative ou comptable avec collecte de pieces et suivi de dossiers.",
+        focus: [
+            "Preparation des dossiers",
+            "Justificatifs manquants",
+            "Priorisation administrative",
+        ],
+        documents: ["Justificatif", "Facture", "RIB", "Reference client ou dossier"],
+        rules: [
+            "Standardiser les relances",
+            "Prioriser les dossiers urgents ou anciens",
+            "Verifier la presence des pieces avant instruction",
+        ],
+        workflows: [
+            "Preparation des dossiers clients",
+            "Relances de justificatifs et pieces comptables",
+            "Priorisation des dossiers a traiter",
+        ],
+        sample: {
+            channel: "courrier",
+            claim_text:
+                "Bonjour, dossier DOS-9902, il manque encore le RIB et une facture pour cloturer ce dossier client. Merci de preparer la relance.",
+            attached_documents: "courrier client",
         },
     },
     niort_lab: {
         badge: "Plateforme Niort Lab",
-        title: "Orchestration avancee pour mutuelles niortaises",
-        description: "Profil de demonstration pour une plateforme modulaire, batchable et exploitable par API au-dessus des besoins MAAF, MACIF et MAIF.",
+        title: "Orchestration avancee pour TPE/PME niortaises",
+        description: "Profil de demonstration pour une plateforme modulaire, batchable et exploitable par API au-dessus des besoins back-office de plusieurs entreprises.",
         focus: [
             "Orchestration API par cas d'usage",
             "Traitement batch et routage intelligent",
@@ -195,19 +222,19 @@ const CARRIER_PROFILES = {
         ],
         documents: ["CSV source", "Identifiants client", "Pieces justificatives normalisees"],
         rules: [
-            "Distinguer les besoins par mutuelle des l'entree",
+            "Distinguer les besoins par entreprise des l'entree",
             "Standardiser les sorties pour un usage API",
             "Permettre l'override operateur sans perdre la trace",
         ],
         workflows: [
-            "Orchestration multi-mutuelle par workflow",
+            "Orchestration multi-entreprise par workflow",
             "Supervision batch et files operateur",
             "Connecteurs email, depot, API et SFTP",
         ],
         sample: {
             channel: "courrier",
             claim_text:
-                "Bonjour, client LAB-9031, dossier DOS-9902, merci de qualifier ce dossier complexe pour routage prioritaire et controle des pieces justificatives.",
+                "Bonjour, client LAB-9031, dossier DOS-9902, merci de qualifier ce dossier complexe pour routage prioritaire, controle des pieces justificatives et relance automatique si besoin.",
             attached_documents: "facture, attestation, courrier client",
         },
     },
@@ -964,7 +991,7 @@ function convertCsvRowToPayload(row) {
         customer_id: row.customer_id || row.client_id || null,
         contract_id: row.contract_id || row.case_id || row.dossier_id || row.claim_id || null,
         carrier_profile:
-            row.carrier_profile || row.mutuelle || row.assureur || row.organisme || "generic",
+            row.carrier_profile || row.profile || row.entreprise || row.secteur || row.mutuelle || row.assureur || row.organisme || "generic",
         provider: row.provider || "mock",
         claim_text: row.claim_text || row.message || row.description || "",
         attached_documents: attachedDocuments,
@@ -1715,7 +1742,7 @@ function renderCaseDetail(item) {
                 <strong>${escapeHtml(findSourceLabel(item))}</strong>
             </div>
             <div class="case-detail-item">
-                <span>Profil mutuelle</span>
+                <span>Profil entreprise</span>
                 <strong>${escapeHtml(carrierProfile.title)}</strong>
             </div>
             <div class="case-detail-item">
@@ -1800,6 +1827,18 @@ function resolveCarrierProfile(value) {
     const normalized = String(value || "").trim().toLowerCase();
     if (!normalized) {
         return "generic";
+    }
+    if (normalized.includes("service")) {
+        return "service_b2b";
+    }
+    if (normalized.includes("immobilier") || normalized.includes("syndic")) {
+        return "immobilier_syndic";
+    }
+    if (normalized.includes("negoce") || normalized.includes("adv") || normalized.includes("commerce")) {
+        return "negoce_adv";
+    }
+    if (normalized.includes("cabinet") || normalized.includes("gestion")) {
+        return "cabinet_gestion";
     }
     if (normalized.includes("maaf")) {
         return "maaf";

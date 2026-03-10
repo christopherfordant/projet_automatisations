@@ -852,6 +852,30 @@ class AutomationService:
         priority: str,
         missing_information: list[str],
     ) -> str:
+        if carrier_profile == "service_b2b":
+            if category == "complaint":
+                return "service_b2b_reclamations_clients"
+            if missing_information:
+                return "service_b2b_relances_pieces"
+            return "service_b2b_tri_demandes"
+        if carrier_profile == "immobilier_syndic":
+            if priority == "high":
+                return "immobilier_sinistres_urgents"
+            if missing_information:
+                return "immobilier_dossiers_incomplets"
+            return "immobilier_suivi_dossiers_locatifs"
+        if carrier_profile == "negoce_adv":
+            if category == "complaint":
+                return "negoce_litiges_commandes"
+            if priority in {"high", "medium"} or category == "reimbursement_followup":
+                return "negoce_suivi_facturation_clients"
+            return "negoce_traitement_commandes"
+        if carrier_profile == "cabinet_gestion":
+            if missing_information:
+                return "cabinet_pieces_comptables_manquantes"
+            if priority == "high":
+                return "cabinet_priorisation_dossiers"
+            return "cabinet_preparation_dossiers"
         if carrier_profile == "maaf":
             if "supporting_quote" in missing_information or category == "health_care_request":
                 return "maaf_devis_optique_dentaire"
@@ -875,7 +899,7 @@ class AutomationService:
                 return "niortlab_connecteurs_entree_reels"
             if priority == "high":
                 return "niortlab_batch_supervision"
-            return "niortlab_orchestration_multi_mutuelle"
+            return "niortlab_orchestration_multi_entreprise"
         if missing_information:
             return "shared_document_completeness"
         if priority == "high":
@@ -888,6 +912,28 @@ class AutomationService:
         document_type: str,
         readiness_status: str,
     ) -> str:
+        if carrier_profile == "service_b2b":
+            if document_type == "complaint":
+                return "service_b2b_reclamations_clients"
+            if readiness_status != "ready":
+                return "service_b2b_relances_pieces"
+            return "service_b2b_tri_demandes"
+        if carrier_profile == "immobilier_syndic":
+            if readiness_status == "blocked":
+                return "immobilier_dossiers_incomplets"
+            if document_type == "hospitalization":
+                return "immobilier_sinistres_urgents"
+            return "immobilier_suivi_dossiers_locatifs"
+        if carrier_profile == "negoce_adv":
+            if document_type == "complaint":
+                return "negoce_litiges_commandes"
+            if readiness_status != "ready":
+                return "negoce_suivi_facturation_clients"
+            return "negoce_traitement_commandes"
+        if carrier_profile == "cabinet_gestion":
+            if readiness_status != "ready":
+                return "cabinet_pieces_comptables_manquantes"
+            return "cabinet_preparation_dossiers"
         if carrier_profile == "maaf":
             if document_type == "optical_quote":
                 return "maaf_devis_optique_dentaire"
@@ -903,7 +949,7 @@ class AutomationService:
         if carrier_profile == "niort_lab":
             if readiness_status != "ready":
                 return "niortlab_connecteurs_entree_reels"
-            return "niortlab_orchestration_multi_mutuelle"
+            return "niortlab_orchestration_multi_entreprise"
         if readiness_status != "ready":
             return "shared_document_completeness"
         return "shared_claims_intake"

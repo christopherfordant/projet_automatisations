@@ -1,4 +1,5 @@
-mutuelle,channel,customer_id,contract_id,claim_text,attached_documents,provider
-maaf,email,CL-2048,DOS-7788,"Bonjour, j'ai une relance urgente pour un remboursement de facture en retard.","facture dentaire",mock
-macif,telephone,CL-3001,DOS-9912,"Bonjour, je souhaite un suivi sur un devis optique en attente.","devis optique",mock
-maif,portail,,,"Bonjour, client CL-5555, dossier DOS-1234, je veux savoir ou en est mon remboursement.",,mock
+carrier_profile,channel,customer_id,contract_id,claim_text,attached_documents,provider
+service_b2b,email,CL-2048,DOS-7788,"Bonjour, je relance une facture en attente de validation depuis plusieurs jours.","facture, bon de commande",mock
+immobilier_syndic,email,CL-3001,DOS-9912,"Bonjour, dossier DOS-9912, le locataire signale une fuite urgente. Je joins le devis mais il manque encore des pieces.","devis travaux, photo degat",mock
+negoce_adv,portail,CL-5555,CMD-1234,"Bonjour, je souhaite un retour sur une commande incomplete et une facture deja emise.","facture, bon de livraison",mock
+cabinet_gestion,courrier,CL-8001,DOS-6500,"Bonjour, il manque encore le RIB et une facture pour finaliser ce dossier client.","courrier client",mock

@@ -207,6 +207,28 @@ def test_claims_intake_selects_company_specific_workflow() -> None:
     assert result["target_workflow_reason_display"]
 
 
+def test_claims_intake_selects_service_b2b_workflow() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_claims_intake(
+            ClaimIntakeRequest(
+                carrier_profile="service_b2b",
+                channel="email",
+                customer_id="CL-2001",
+                contract_id="DOS-2001",
+                claim_text="Bonjour, je fais une reclamation car ma demande reste sans reponse.",
+                attached_documents=["mail client"],
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["carrier_profile"] == "service_b2b"
+    assert result["target_workflow"] == "service_b2b_reclamations_clients"
+    assert result["target_workflow_label"] == "Gestion des reclamations clients"
+
+
 def test_document_completeness_can_attach_verified_web_sources(monkeypatch) -> None:
     service = AutomationService()
 
@@ -276,3 +298,27 @@ def test_document_completeness_selects_company_specific_workflow() -> None:
     assert result["carrier_profile"] == "maaf"
     assert result["target_workflow"] == "maaf_devis_optique_dentaire"
     assert result["target_workflow_label"] == "Controle devis optique et dentaire"
+
+
+def test_document_completeness_selects_immobilier_workflow() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_document_completeness(
+            DocumentCompletenessRequest(
+                carrier_profile="immobilier_syndic",
+                document_type="reimbursement",
+                customer_id="CL-4001",
+                contract_id="DOS-7788",
+                document_text="Bonjour, je joins un devis travaux mais il manque encore des justificatifs.",
+                attached_documents=["devis travaux"],
+                message_tone="neutral",
+                output_channel="email",
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["carrier_profile"] == "immobilier_syndic"
+    assert result["target_workflow"] == "immobilier_dossiers_incomplets"
+    assert result["target_workflow_label"] == "Relances sur dossiers incomplets"

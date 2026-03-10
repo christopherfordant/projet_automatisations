@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mutuelle AI Lab</title>
+    <title>Niort Back-Office AI Lab</title>
     <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
     <main class="layout">
         <section class="hero">
             <p class="eyebrow">Interface de test</p>
-            <h1>Tester le module claims intake sans coder</h1>
+            <h1>Tester des workflows back-office sans coder</h1>
             <p class="intro">
                 Cette page envoie une demande vers l'API et affiche une reponse interpretable:
                 categorie, priorite, informations manquantes et prochaine action.
             </p>
             <p class="hint">
-                Point d'entree adapte au contexte des mutuelles de Niort: MAAF, MACIF, MAIF
-                et a une logique de plateforme modulaire plus avancee.
+                Point d'entree adapte aux TPE et PME de Niort: services B2B, immobilier,
+                negoce et gestion administrative, avec une logique de plateforme modulaire.
             </p>
         </section>
 
@@ -60,22 +60,23 @@
         <section class="panel">
             <div class="carrier-panel">
                 <div>
-                    <p class="section-kicker">Profil mutuelle</p>
-                    <h2>Dissocier les specificites par organisme</h2>
+                    <p class="section-kicker">Profil entreprise</p>
+                    <h2>Dissocier les specificites par type d'activite</h2>
                     <p class="hint">
-                        Choisis une mutuelle cible pour afficher ses priorites, ses attentes documentaires
+                        Choisis un profil TPE/PME pour afficher ses priorites, ses attentes documentaires
                         et un cadrage de test plus proche d'un vrai contexte metier.
                     </p>
                 </div>
 
                 <div class="carrier-selector">
                     <label class="csv-field">
-                        Mutuelle cible
+                        Profil cible
                         <select id="carrier-profile">
-                            <option value="generic">Pole mutuelles de Niort</option>
-                            <option value="maaf">MAAF</option>
-                            <option value="macif">MACIF</option>
-                            <option value="maif">MAIF</option>
+                            <option value="generic">TPE/PME Niort</option>
+                            <option value="service_b2b">Services B2B</option>
+                            <option value="immobilier_syndic">Immobilier / Syndic</option>
+                            <option value="negoce_adv">Negoce / ADV</option>
+                            <option value="cabinet_gestion">Cabinet de gestion</option>
                             <option value="niort_lab">Plateforme Niort Lab</option>
                         </select>
                     </label>
@@ -83,11 +84,11 @@
 
                 <div class="carrier-overview">
                     <article class="carrier-card carrier-card-main">
-                        <p id="carrier-badge" class="carrier-badge">Pole niortais</p>
-                        <h3 id="carrier-title">Base commune MAAF, MACIF, MAIF</h3>
+                        <p id="carrier-badge" class="carrier-badge">Tissu PME niortais</p>
+                        <h3 id="carrier-title">Base commune TPE/PME de Niort</h3>
                         <p id="carrier-description" class="hint">
-                            Tronc commun pour tester une demande sante ou relation adherent dans
-                            l'ecosysteme mutualiste niortais.
+                            Tronc commun pour tester une demande administrative, commerciale ou
+                            back-office dans l'ecosysteme PME niortais.
                         </p>
                     </article>
                     <article class="carrier-card">
@@ -117,9 +118,9 @@
                     <article class="carrier-card">
                         <h3>Workflows entreprise cibles</h3>
                         <ul id="carrier-workflows-list" class="carrier-list">
-                            <li>Qualification reception mutualiste</li>
+                            <li>Tri administratif entrant</li>
                             <li>Controle de completude documentaire</li>
-                            <li>Pilotage operateur transverse</li>
+                            <li>Pilotage back-office transverse</li>
                         </ul>
                     </article>
                 </div>
@@ -261,8 +262,8 @@
                 </label>
 
                 <label>
-                    Profil mutuelle applique
-                    <input type="text" id="carrier-profile-readonly" value="Profil generique mutuelle" readonly>
+                    Profil entreprise applique
+                    <input type="text" id="carrier-profile-readonly" value="Profil generique TPE/PME" readonly>
                 </label>
 
                 <label>

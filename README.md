@@ -37,6 +37,7 @@ Le socle est pense pour:
 - Backend: FastAPI
 - Validation/configuration: Pydantic Settings
 - Serveur local IA cible: Ollama via endpoint compatible OpenAI
+- Provider distant optionnel: Perplexity pour enrichir les reponses et la recherche
 - Orchestration cible: n8n self-hosted
 - Backend data cible: Supabase local / Postgres local
 - Recherche vectorielle cible: Qdrant
@@ -208,6 +209,28 @@ Configuration associee:
 - `WEB_LOOKUP_ALLOWED_DOMAINS`
 - `LOCAL_STATE_DB_PATH`
 
+## Perplexity et Gamma en local-first
+
+Le projet reste local-first mais peut maintenant brancher deux services externes en option:
+
+- `Perplexity` comme provider IA distant;
+- `Gamma` comme sortie de type support commercial, document ou presentation.
+
+Configuration associee:
+
+- `PERPLEXITY_BASE_URL`
+- `PERPLEXITY_API_KEY`
+- `PERPLEXITY_DEFAULT_MODEL`
+- `GAMMA_BASE_URL`
+- `GAMMA_API_KEY`
+- `GAMMA_DEFAULT_OUTPUT_TYPE`
+
+Usage:
+
+- choisis `Perplexity API` dans l'interface si la cle API est configuree;
+- utilise le module `Sortie Gamma` pour generer un prompt et un markdown importable dans Gamma;
+- sans cle, tout reste utilisable en local avec `mock` ou `ollama`.
+
 ## Persistance operateur locale
 
 Le poste operateur n'est plus limite au navigateur.
@@ -243,6 +266,7 @@ L'interface web propose aussi une zone `Depot surveille` qui:
 - `POST /automations/claims-intake/batch`
 - `POST /automations/document-analysis`
 - `POST /automations/document-completeness`
+- `POST /automations/gamma-brief`
 
 ## Vision de modularisation
 

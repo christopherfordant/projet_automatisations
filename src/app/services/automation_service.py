@@ -5,6 +5,7 @@ from app.connectors.mutuelle_catalog import CONNECTOR_CATALOG
 from app.core.config import get_settings
 from app.providers.base import PromptRequest
 from app.providers.registry import get_provider
+from app.services.gamma_service import GammaService
 from app.services.verified_web_lookup import VerifiedWebLookupService
 from app.schemas.automation import (
     AutomationRequest,
@@ -13,6 +14,7 @@ from app.schemas.automation import (
     DocumentCompletenessRequest,
     DocumentAnalysisRequest,
     FollowupAssistantRequest,
+    GammaBriefRequest,
 )
 
 
@@ -104,6 +106,7 @@ class AutomationService:
 
     def __init__(self) -> None:
         self.web_lookup_service = VerifiedWebLookupService()
+        self.gamma_service = GammaService()
 
     async def run_intake(self, payload: AutomationRequest) -> dict[str, object]:
         settings = get_settings()
@@ -504,6 +507,57 @@ class AutomationService:
             "output_channel": payload.output_channel,
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
+        }
+
+    async def run_gamma_brief(self, payload: GammaBriefRequest) -> dict[str, object]:
+        settings = get_settings()
+        provider = get_provider(payload.provider)
+        company_profile = get_company_workflow_profile(payload.carrier_profile)
+        prompt = PromptRequest(
+            system_prompt=(
+                "Tu aides a transformer un resultat metier en support de presentation tres concis. "
+                "Retourne un resume executif clair en francais."
+            ),
+            user_prompt=(
+                f"Titre: {payload.title}\n"
+                f"Audience: {payload.audience}\n"
+                f"Objectif: {payload.objective}\n"
+                f"Module source: {payload.source_module}\n"
+                f"Contexte source:\n{payload.source_context}\n"
+                f"Points cles: {', '.join(payload.key_points) or 'aucun point fourni'}"
+            ),
+            model=settings.default_ai_model,
+        )
+        ai_result = await provider.generate(prompt)
+        operator_summary = self._flatten_message(str(ai_result["content"]))
+        gamma_brief = self.gamma_service.build_brief(
+            title=payload.title,
+            audience=payload.audience,
+            objective=payload.objective,
+            source_module=payload.source_module,
+            source_context=self._flatten_message(payload.source_context),
+            key_points=payload.key_points,
+            output_type=payload.output_type,
+            operator_summary=operator_summary,
+        )
+        return {
+            "module": "gamma_brief",
+            "carrier_profile": company_profile.code,
+            "carrier_profile_label": company_profile.label,
+            "target_company": company_profile.target_company,
+            "title": payload.title,
+            "audience": payload.audience,
+            "objective": payload.objective,
+            "source_module": payload.source_module,
+            "source_context": payload.source_context,
+            "source_context_display": self._flatten_message(payload.source_context),
+            "source_context_sections": self._split_message_sections(self._flatten_message(payload.source_context)),
+            "operator_summary": operator_summary,
+            "operator_summary_display": operator_summary,
+            "operator_summary_sections": self._split_message_sections(operator_summary),
+            "ai_provider": ai_result["provider"],
+            "ai_model": ai_result["model"],
+            **gamma_brief,
         }
 
     async def _resolve_claim_web_sources(

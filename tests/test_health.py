@@ -26,6 +26,14 @@ def test_n8n_stack_healthcheck_returns_service_map() -> None:
     assert set(payload["services"]) == {"fastapi", "n8n", "ollama", "postgres"}
 
 
+def test_providers_catalog_lists_perplexity() -> None:
+    response = client.get("/providers")
+    assert response.status_code == 200
+    payload = response.json()
+    provider_names = {item["name"] for item in payload["items"]}
+    assert "perplexity" in provider_names
+
+
 def test_home_page_is_available() -> None:
     response = client.get("/")
     assert response.status_code == 200
@@ -189,3 +197,23 @@ def test_operator_state_can_be_saved_and_loaded(monkeypatch) -> None:
 
     if db_path.exists():
         db_path.unlink()
+
+
+def test_gamma_brief_route_is_available() -> None:
+    response = client.post(
+        "/automations/gamma-brief",
+        json={
+            "carrier_profile": "generic",
+            "title": "Support de demo",
+            "audience": "prospect PME",
+            "objective": "Presenter le workflow",
+            "source_context": "Le systeme trie, priorise et relance automatiquement.",
+            "key_points": ["tri", "priorisation"],
+            "output_type": "presentation",
+            "provider": "mock",
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["module"] == "gamma_brief"
+    assert payload["gamma_ready"] is True

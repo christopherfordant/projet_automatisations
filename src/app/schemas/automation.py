@@ -72,6 +72,18 @@ class FollowupAssistantRequest(BaseModel):
     provider: str | None = Field(default=None, description="Provider IA a utiliser")
 
 
+class GammaBriefRequest(BaseModel):
+    carrier_profile: str | None = Field(default="generic", description="Entreprise cible")
+    title: str = Field(..., description="Titre du livrable a generer")
+    audience: str = Field(default="direction", description="Audience cible")
+    objective: str = Field(..., description="Objectif du livrable")
+    source_module: str = Field(default="claims_intake", description="Module source")
+    source_context: str = Field(..., description="Contexte ou resultat source")
+    key_points: list[str] = Field(default_factory=list, description="Points cles a mettre en avant")
+    output_type: str = Field(default="presentation", description="presentation, document ou webpage")
+    provider: str | None = Field(default=None, description="Provider IA a utiliser pour enrichir le resume")
+
+
 class OperatorActionLogEntry(BaseModel):
     timestamp: str
     action: str

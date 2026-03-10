@@ -1,8 +1,10 @@
 const form = document.getElementById("claims-form");
 const documentForm = document.getElementById("document-form");
 const followupForm = document.getElementById("followup-form");
+const gammaForm = document.getElementById("gamma-form");
 const fillDocumentExample = document.getElementById("fill-document-example");
 const fillFollowupExample = document.getElementById("fill-followup-example");
+const fillGammaExample = document.getElementById("fill-gamma-example");
 const carrierProfileSelect = document.getElementById("carrier-profile");
 const carrierProfileReadonly = document.getElementById("carrier-profile-readonly");
 const carrierBadge = document.getElementById("carrier-badge");
@@ -22,6 +24,7 @@ const documentSummary = document.getElementById("document-summary");
 const followupSummary = document.getElementById("followup-summary");
 const documentWorkflowSummary = document.getElementById("document-workflow-summary");
 const followupWorkflowSummary = document.getElementById("followup-workflow-summary");
+const gammaSummary = document.getElementById("gamma-summary");
 const documentRequestSummary = document.getElementById("document-request-summary");
 const followupRequestSummary = document.getElementById("followup-request-summary");
 const attentionSummary = document.getElementById("attention-summary");
@@ -40,6 +43,9 @@ const copyFollowupMessageButton = document.getElementById("copy-followup-message
 const followupOperatorSummary = document.getElementById("followup-operator-summary");
 const followupRequestMessage = document.getElementById("followup-request-message");
 const followupOutput = document.getElementById("followup-output");
+const gammaPrompt = document.getElementById("gamma-prompt");
+const gammaMarkdown = document.getElementById("gamma-markdown");
+const gammaOutput = document.getElementById("gamma-output");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
@@ -299,6 +305,17 @@ fillFollowupExample.addEventListener("click", () => {
         "Bonjour, le client attend une validation de dossier depuis une semaine et il manque encore le bon de commande signe et le RIB.";
 });
 
+fillGammaExample.addEventListener("click", () => {
+    gammaForm.title.value = "Automatisation des relances back-office";
+    gammaForm.audience.value = "direction PME";
+    gammaForm.output_type.value = "presentation";
+    gammaForm.provider.value = "mock";
+    gammaForm.objective.value = "Montrer comment la plateforme reduit les blocages et les relances manuelles";
+    gammaForm.source_context.value =
+        "Le workflow detecte les pieces manquantes, genere les relances client et priorise les dossiers urgents pour le back-office.";
+    gammaForm.key_points.value = "gain de temps, baisse des oublis, priorisation, relances automatisees";
+});
+
 carrierProfileSelect.addEventListener("change", () => {
     renderCarrierProfile();
 });
@@ -338,6 +355,61 @@ copyDocumentMessageButton.addEventListener("click", () => {
 });
 copyFollowupMessageButton.addEventListener("click", () => {
     void copyToClipboard(followupRequestMessage.textContent, "Message de relance copie.");
+});
+
+gammaForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const payload = {
+        carrier_profile: carrierProfileSelect.value,
+        title: gammaForm.title.value,
+        audience: gammaForm.audience.value || "direction",
+        objective: gammaForm.objective.value,
+        source_module: "back_office_pitch",
+        source_context: gammaForm.source_context.value,
+        key_points: gammaForm.key_points.value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+        output_type: gammaForm.output_type.value,
+        provider: gammaForm.provider.value,
+    };
+
+    gammaSummary.innerHTML = `
+        <div><dt>Type</dt><dd>${escapeHtml(payload.output_type)}</dd></div>
+        <div><dt>API Gamma</dt><dd>Preparation...</dd></div>
+        <div><dt>Provider</dt><dd>${escapeHtml(payload.provider)}</dd></div>
+    `;
+    gammaPrompt.textContent = "Generation du prompt Gamma en cours...";
+    gammaMarkdown.textContent = "Generation du markdown en cours...";
+    gammaOutput.textContent = "Chargement...";
+
+    try {
+        const response = await fetch("/automations/gamma-brief", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(JSON.stringify(data, null, 2));
+        }
+
+        gammaSummary.innerHTML = `
+            <div><dt>Type</dt><dd>${escapeHtml(data.gamma_output_type || "-")}</dd></div>
+            <div><dt>API Gamma</dt><dd>${escapeHtml(data.gamma_api_configured ? "Configuree" : "Non configuree")}</dd></div>
+            <div><dt>Provider</dt><dd>${escapeHtml(data.ai_provider || "-")}</dd></div>
+        `;
+        gammaPrompt.textContent = data.gamma_prompt || "Aucun prompt genere.";
+        gammaMarkdown.textContent = data.gamma_import_markdown || "Aucun markdown genere.";
+        gammaOutput.textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+        gammaPrompt.textContent = "Erreur lors de la preparation du prompt Gamma.";
+        gammaMarkdown.textContent = "Erreur lors de la preparation du markdown Gamma.";
+        gammaOutput.textContent = String(error);
+    }
 });
 
 documentForm.addEventListener("submit", async (event) => {

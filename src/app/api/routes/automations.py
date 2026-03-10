@@ -11,6 +11,7 @@ from app.schemas.automation import (
     DocumentCompletenessRequest,
     DocumentAnalysisRequest,
     FollowupAssistantRequest,
+    GammaBriefRequest,
     OperatorStatePayload,
 )
 from app.services.automation_service import AutomationService
@@ -50,6 +51,11 @@ async def document_completeness(payload: DocumentCompletenessRequest) -> dict[st
 @router.post("/followup-assistant")
 async def followup_assistant(payload: FollowupAssistantRequest) -> dict[str, object]:
     return await service.run_followup_assistant(payload)
+
+
+@router.post("/gamma-brief")
+async def gamma_brief(payload: GammaBriefRequest) -> dict[str, object]:
+    return await service.run_gamma_brief(payload)
 
 
 @router.get("/company-workflows")

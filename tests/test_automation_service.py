@@ -5,6 +5,7 @@ from app.schemas.automation import (
     ClaimIntakeRequest,
     DocumentCompletenessRequest,
     FollowupAssistantRequest,
+    GammaBriefRequest,
 )
 from app.services.automation_service import AutomationService
 
@@ -378,3 +379,29 @@ def test_followup_assistant_builds_invoice_followup_for_negoce() -> None:
     assert result["followup_type_label"] == "Relance facture"
     assert result["urgency_level"] == "elevated"
     assert "245.90 EUR" in result["client_request_message"]
+
+
+def test_gamma_brief_builds_gamma_ready_payload() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_gamma_brief(
+            GammaBriefRequest(
+                carrier_profile="service_b2b",
+                title="Automatisation des relances",
+                audience="direction PME",
+                objective="Presenter le gain de temps sur les relances administratives",
+                source_context="Le workflow detecte les pieces manquantes et prepare les messages clients.",
+                key_points=["gain de temps", "moins d'oublis", "meilleure priorisation"],
+                output_type="presentation",
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["module"] == "gamma_brief"
+    assert result["carrier_profile"] == "service_b2b"
+    assert result["gamma_ready"] is True
+    assert result["gamma_output_type"] == "presentation"
+    assert "Automatisation des relances" in result["gamma_prompt"]
+    assert result["gamma_key_points"] == ["gain de temps", "moins d'oublis", "meilleure priorisation"]

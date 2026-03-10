@@ -281,6 +281,7 @@
                     <select name="provider">
                         <option value="mock">Mock (recommande pour tester)</option>
                         <option value="ollama">Ollama local</option>
+                        <option value="perplexity">Perplexity API</option>
                     </select>
                 </label>
 
@@ -589,6 +590,7 @@
                     <select name="provider">
                         <option value="mock">Mock (recommande pour tester)</option>
                         <option value="ollama">Ollama local</option>
+                        <option value="perplexity">Perplexity API</option>
                     </select>
                 </label>
 
@@ -746,6 +748,7 @@
                     <select name="provider">
                         <option value="mock">Mock (recommande pour tester)</option>
                         <option value="ollama">Ollama local</option>
+                        <option value="perplexity">Perplexity API</option>
                     </select>
                 </label>
 
@@ -851,6 +854,97 @@
         <section class="card">
             <h2>Reponse relance complete</h2>
             <pre id="followup-output" class="output">Le JSON de relance apparaitra ici.</pre>
+        </section>
+
+        <section class="panel">
+            <div>
+                <p class="section-kicker">Sortie Gamma</p>
+                <h2>Preparer un support Gamma a partir d'un resultat metier</h2>
+                <p class="hint">
+                    Ce module fabrique un brief directement exploitable dans Gamma en mode local-first.
+                    Si une cle API Gamma est configuree plus tard, la sortie est deja prete a etre branchee.
+                </p>
+            </div>
+
+            <form id="gamma-form" class="form">
+                <label>
+                    Titre
+                    <input type="text" name="title" placeholder="Ex: Automatisation des relances back-office">
+                </label>
+
+                <label>
+                    Audience
+                    <input type="text" name="audience" placeholder="Ex: direction, client, prospect">
+                </label>
+
+                <label>
+                    Type de sortie
+                    <select name="output_type">
+                        <option value="presentation">Presentation</option>
+                        <option value="document">Document</option>
+                        <option value="webpage">Webpage</option>
+                    </select>
+                </label>
+
+                <label>
+                    Provider IA
+                    <select name="provider">
+                        <option value="mock">Mock (recommande pour tester)</option>
+                        <option value="ollama">Ollama local</option>
+                        <option value="perplexity">Perplexity API</option>
+                    </select>
+                </label>
+
+                <label class="full">
+                    Objectif
+                    <input type="text" name="objective" placeholder="Ex: convaincre un prospect PME d'adopter le workflow">
+                </label>
+
+                <label class="full">
+                    Contexte source
+                    <textarea
+                        name="source_context"
+                        rows="6"
+                        placeholder="Ex: Le workflow detecte les blocages, genere les relances et priorise les dossiers urgents."
+                    ></textarea>
+                </label>
+
+                <label class="full">
+                    Points cles
+                    <input type="text" name="key_points" placeholder="Ex: gain de temps, baisse des oublis, relances automatisees">
+                </label>
+
+                <div class="actions">
+                    <button type="submit">Generer le brief Gamma</button>
+                    <button type="button" id="fill-gamma-example" class="secondary">Charger un exemple</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="results-grid">
+            <article class="card">
+                <h2>Brief Gamma</h2>
+                <dl id="gamma-summary" class="summary">
+                    <div><dt>Type</dt><dd>-</dd></div>
+                    <div><dt>API Gamma</dt><dd>-</dd></div>
+                    <div><dt>Provider</dt><dd>-</dd></div>
+                </dl>
+            </article>
+
+            <article class="card">
+                <h2>Prompt Gamma</h2>
+                <pre id="gamma-prompt" class="output">Le prompt Gamma apparaitra ici.</pre>
+            </article>
+        </section>
+
+        <section class="card">
+            <h2>Markdown importable dans Gamma</h2>
+            <pre id="gamma-markdown" class="output">Le markdown Gamma apparaitra ici.</pre>
+        </section>
+
+        <section class="card">
+            <h2>Reponse Gamma complete</h2>
+            <pre id="gamma-output" class="output">Le JSON Gamma apparaitra ici.</pre>
         </section>
 
         <section class="card">

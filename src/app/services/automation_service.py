@@ -108,10 +108,14 @@ class AutomationService:
             model=settings.default_ai_model,
         )
         result = await provider.generate(prompt)
+        normalized_result = {
+            **result,
+            "content": self._flatten_message(str(result["content"])),
+        }
         return {
             "workflow_name": payload.workflow_name,
             "available_connectors": [item.name for item in CONNECTOR_CATALOG],
-            "result": result,
+            "result": normalized_result,
         }
 
     async def run_claims_intake(self, payload: ClaimIntakeRequest) -> dict[str, object]:
@@ -194,7 +198,7 @@ class AutomationService:
             "client_request_message": client_request["message"],
             "web_lookup_used": payload.web_lookup_enabled,
             "verified_web_sources": verified_web_sources,
-            "operator_summary": ai_result["content"],
+            "operator_summary": self._flatten_message(str(ai_result["content"])),
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
         }
@@ -244,9 +248,13 @@ class AutomationService:
             model=settings.default_ai_model,
         )
         result = await provider.generate(prompt)
+        normalized_result = {
+            **result,
+            "content": self._flatten_message(str(result["content"])),
+        }
         return {
             "document_name": payload.document_name,
-            "result": result,
+            "result": normalized_result,
         }
 
     async def run_document_completeness(
@@ -357,7 +365,7 @@ class AutomationService:
             "client_request_message": request_message["message"],
             "web_lookup_used": payload.web_lookup_enabled,
             "verified_web_sources": verified_web_sources,
-            "operator_summary": ai_result["content"],
+            "operator_summary": self._flatten_message(str(ai_result["content"])),
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
         }

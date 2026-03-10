@@ -20,6 +20,7 @@ class DocumentAnalysisRequest(BaseModel):
 
 class DocumentCompletenessRequest(BaseModel):
     document_type: str = Field(..., description="Type de dossier ou document a verifier")
+    carrier_profile: str | None = Field(default="generic", description="Entreprise ou mutuelle cible")
     customer_id: str | None = Field(default=None, description="Identifiant client si connu")
     contract_id: str | None = Field(default=None, description="Reference dossier si connue")
     document_text: str = Field(..., description="Texte libre ou contexte du dossier")
@@ -34,6 +35,7 @@ class DocumentCompletenessRequest(BaseModel):
 
 
 class ClaimIntakeRequest(BaseModel):
+    carrier_profile: str | None = Field(default="generic", description="Entreprise ou mutuelle cible")
     customer_id: str | None = Field(default=None, description="Identifiant client si connu")
     contract_id: str | None = Field(default=None, description="Reference contrat si connue")
     channel: str = Field(default="email", description="Canal d'entree")

@@ -175,6 +175,28 @@ def test_claims_intake_can_attach_verified_web_sources(monkeypatch) -> None:
     assert result["verified_web_sources"][0]["domain"] == "ameli.fr"
 
 
+def test_claims_intake_selects_company_specific_workflow() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_claims_intake(
+            ClaimIntakeRequest(
+                carrier_profile="macif",
+                channel="email",
+                customer_id="CL-9911",
+                contract_id="DOS-9911",
+                claim_text="Bonjour, je depose une reclamation sur le retard de traitement de mon dossier.",
+                attached_documents=["courrier reclamation"],
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["carrier_profile"] == "macif"
+    assert result["target_workflow"] == "macif_reclamations_sensibles"
+    assert result["target_workflow_label"] == "Triage des reclamations sensibles"
+
+
 def test_document_completeness_can_attach_verified_web_sources(monkeypatch) -> None:
     service = AutomationService()
 
@@ -220,3 +242,27 @@ def test_document_completeness_can_attach_verified_web_sources(monkeypatch) -> N
 
     assert result["web_lookup_used"] is True
     assert result["verified_web_sources"][0]["domain"] == "service-public.fr"
+
+
+def test_document_completeness_selects_company_specific_workflow() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_document_completeness(
+            DocumentCompletenessRequest(
+                carrier_profile="maaf",
+                document_type="optical_quote",
+                customer_id="CL-4001",
+                contract_id="DOS-7788",
+                document_text="Bonjour, je transmets mon devis optique avec mon numero adherent pour etude.",
+                attached_documents=["devis optique", "numero adherent"],
+                message_tone="neutral",
+                output_channel="email",
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["carrier_profile"] == "maaf"
+    assert result["target_workflow"] == "maaf_devis_optique_dentaire"
+    assert result["target_workflow_label"] == "Controle devis optique et dentaire"

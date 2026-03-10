@@ -1,5 +1,6 @@
 import re
 
+from app.connectors.company_workflow_catalog import get_company_workflow_profile
 from app.connectors.mutuelle_catalog import CONNECTOR_CATALOG
 from app.core.config import get_settings
 from app.providers.base import PromptRequest
@@ -154,6 +155,13 @@ class AutomationService:
         )
 
         ai_result = await provider.generate(prompt)
+        company_profile = get_company_workflow_profile(payload.carrier_profile)
+        target_workflow = self._resolve_company_claim_workflow(
+            carrier_profile=company_profile.code,
+            category=category,
+            priority=priority,
+            missing_information=missing_information,
+        )
         verified_web_sources = await self._resolve_claim_web_sources(
             payload.web_lookup_enabled,
             missing_information,
@@ -166,6 +174,12 @@ class AutomationService:
         )
         result = {
             "module": "claims_intake",
+            "carrier_profile": company_profile.code,
+            "carrier_profile_label": company_profile.label,
+            "target_company": company_profile.target_company,
+            "target_workflow": target_workflow,
+            "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
+            "target_workflow_reason": company_profile.positioning,
             "customer_id": resolved_customer_id,
             "contract_id": resolved_contract_id,
             "claim_text": payload.claim_text,
@@ -297,6 +311,12 @@ class AutomationService:
             model=settings.default_ai_model,
         )
         ai_result = await provider.generate(prompt)
+        company_profile = get_company_workflow_profile(payload.carrier_profile)
+        target_workflow = self._resolve_company_document_workflow(
+            carrier_profile=company_profile.code,
+            document_type=payload.document_type,
+            readiness_status=readiness_status,
+        )
         verified_web_sources = await self._resolve_document_web_sources(
             payload.web_lookup_enabled,
             payload.document_type,
@@ -314,6 +334,12 @@ class AutomationService:
 
         return {
             "module": "document_completeness",
+            "carrier_profile": company_profile.code,
+            "carrier_profile_label": company_profile.label,
+            "target_company": company_profile.target_company,
+            "target_workflow": target_workflow,
+            "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
+            "target_workflow_reason": company_profile.positioning,
             "document_type": payload.document_type,
             "document_type_label": profile["label"],
             "customer_id": payload.customer_id,
@@ -740,3 +766,66 @@ class AutomationService:
             value = str(item[key])
             counts[value] = counts.get(value, 0) + 1
         return counts
+
+    @staticmethod
+    def _resolve_company_claim_workflow(
+        carrier_profile: str,
+        category: str,
+        priority: str,
+        missing_information: list[str],
+    ) -> str:
+        if carrier_profile == "maaf":
+            if "supporting_quote" in missing_information or category == "health_care_request":
+                return "maaf_devis_optique_dentaire"
+            if category == "reimbursement_followup":
+                return "maaf_relances_remboursement"
+            return "maaf_prestations_sante"
+        if carrier_profile == "macif":
+            if category == "complaint":
+                return "macif_reclamations_sensibles"
+            if priority in {"high", "medium"}:
+                return "macif_suivi_delais_sociataires"
+            return "macif_distribution_flux_entrants"
+        if carrier_profile == "maif":
+            if priority == "high" or category == "health_care_request":
+                return "maif_dossiers_urgents_sante"
+            if category == "complaint":
+                return "maif_coordination_multi_echanges"
+            return "maif_accompagnement_contextuel"
+        if carrier_profile == "niort_lab":
+            if missing_information:
+                return "niortlab_connecteurs_entree_reels"
+            if priority == "high":
+                return "niortlab_batch_supervision"
+            return "niortlab_orchestration_multi_mutuelle"
+        if missing_information:
+            return "shared_document_completeness"
+        if priority == "high":
+            return "shared_operator_supervision"
+        return "shared_claims_intake"
+
+    @staticmethod
+    def _resolve_company_document_workflow(
+        carrier_profile: str,
+        document_type: str,
+        readiness_status: str,
+    ) -> str:
+        if carrier_profile == "maaf":
+            if document_type == "optical_quote":
+                return "maaf_devis_optique_dentaire"
+            return "maaf_prestations_sante"
+        if carrier_profile == "macif":
+            if document_type == "complaint":
+                return "macif_reclamations_sensibles"
+            return "macif_distribution_flux_entrants"
+        if carrier_profile == "maif":
+            if document_type == "hospitalization" or readiness_status == "blocked":
+                return "maif_dossiers_urgents_sante"
+            return "maif_accompagnement_contextuel"
+        if carrier_profile == "niort_lab":
+            if readiness_status != "ready":
+                return "niortlab_connecteurs_entree_reels"
+            return "niortlab_orchestration_multi_mutuelle"
+        if readiness_status != "ready":
+            return "shared_document_completeness"
+        return "shared_claims_intake"

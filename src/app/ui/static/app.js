@@ -9,12 +9,15 @@ const carrierDescription = document.getElementById("carrier-description");
 const carrierFocusList = document.getElementById("carrier-focus-list");
 const carrierDocumentsList = document.getElementById("carrier-documents-list");
 const carrierRulesList = document.getElementById("carrier-rules-list");
+const carrierWorkflowsList = document.getElementById("carrier-workflows-list");
 const fillExample = document.getElementById("fill-example");
 const refreshStackStatusButton = document.getElementById("refresh-stack-status");
 const summary = document.getElementById("summary");
+const workflowSummary = document.getElementById("workflow-summary");
 const stackHealthSummary = document.getElementById("stack-health-summary");
 const stackHealthGrid = document.getElementById("stack-health-grid");
 const documentSummary = document.getElementById("document-summary");
+const documentWorkflowSummary = document.getElementById("document-workflow-summary");
 const documentRequestSummary = document.getElementById("document-request-summary");
 const attentionSummary = document.getElementById("attention-summary");
 const missingList = document.getElementById("missing-list");
@@ -88,6 +91,11 @@ const CARRIER_PROFILES = {
             "Bloquer les dossiers incomplets",
             "Remonter les reclamations a revoir",
         ],
+        workflows: [
+            "Qualification reception mutualiste",
+            "Controle de completude documentaire",
+            "Pilotage operateur transverse",
+        ],
         sample: {
             channel: "email",
             claim_text:
@@ -109,6 +117,11 @@ const CARRIER_PROFILES = {
             "Orienter vite les relances de remboursement",
             "Controler la presence d'une facture ou d'un devis",
             "Basculer les urgences en file prioritaire",
+        ],
+        workflows: [
+            "Pre-instruction prestations sante",
+            "Controle devis optique et dentaire",
+            "Priorisation des relances remboursement",
         ],
         sample: {
             channel: "portail",
@@ -132,6 +145,11 @@ const CARRIER_PROFILES = {
             "Conserver la trace des delais annonces",
             "Identifier les demandes repetitives",
         ],
+        workflows: [
+            "Triage des reclamations sensibles",
+            "Distribution des activites entrantes",
+            "Suivi des retards et relances adherents",
+        ],
         sample: {
             channel: "email",
             claim_text:
@@ -154,6 +172,11 @@ const CARRIER_PROFILES = {
             "Consolider les pieces disperses",
             "Verifier les references de contrat avant routage",
         ],
+        workflows: [
+            "Accompagnement contextuel du sociataire",
+            "Prise en charge des dossiers urgents sante",
+            "Coordination des dossiers a echanges multiples",
+        ],
         sample: {
             channel: "telephone",
             claim_text:
@@ -175,6 +198,11 @@ const CARRIER_PROFILES = {
             "Distinguer les besoins par mutuelle des l'entree",
             "Standardiser les sorties pour un usage API",
             "Permettre l'override operateur sans perdre la trace",
+        ],
+        workflows: [
+            "Orchestration multi-mutuelle par workflow",
+            "Supervision batch et files operateur",
+            "Connecteurs email, depot, API et SFTP",
         ],
         sample: {
             channel: "courrier",
@@ -264,6 +292,7 @@ documentForm.addEventListener("submit", async (event) => {
         customer_id: documentForm.customer_id.value || null,
         contract_id: documentForm.contract_id.value || null,
         provider: documentForm.provider.value,
+        carrier_profile: carrierProfileSelect.value,
         message_tone: documentForm.message_tone.value,
         output_channel: documentForm.output_channel.value,
         web_lookup_enabled: documentForm.web_lookup_enabled.checked,
@@ -278,6 +307,11 @@ documentForm.addEventListener("submit", async (event) => {
         type: payload.document_type,
         status: "Analyse...",
         completion: "-",
+    });
+    setDocumentWorkflowSummary({
+        company: getCurrentCarrierProfile().title,
+        workflow: "Analyse...",
+        logic: "-",
     });
     renderDocumentRequestMessage(
         payload.message_tone,
@@ -309,6 +343,11 @@ documentForm.addEventListener("submit", async (event) => {
             status: data.readiness_status_label,
             completion: `${data.completion_ratio}%`,
         });
+        setDocumentWorkflowSummary({
+            company: data.carrier_profile_label,
+            workflow: data.target_workflow_label,
+            logic: data.target_workflow_reason,
+        });
         renderDocumentLists(data);
         renderDocumentRequestMessage(
             data.message_tone,
@@ -323,6 +362,11 @@ documentForm.addEventListener("submit", async (event) => {
             type: payload.document_type,
             status: "Erreur",
             completion: "-",
+        });
+        setDocumentWorkflowSummary({
+            company: getCurrentCarrierProfile().title,
+            workflow: "Erreur",
+            logic: "-",
         });
         renderDocumentRequestMessage(
             payload.message_tone,
@@ -345,6 +389,7 @@ form.addEventListener("submit", async (event) => {
         customer_id: form.customer_id.value || null,
         contract_id: form.contract_id.value || null,
         provider: form.provider.value,
+        carrier_profile: carrierProfileSelect.value,
         web_lookup_enabled: form.web_lookup_enabled.checked,
         claim_text: form.claim_text.value,
         attached_documents: form.attached_documents.value
@@ -358,6 +403,11 @@ form.addEventListener("submit", async (event) => {
         category: "-",
         priority: "-",
         action: "-",
+    });
+    setWorkflowSummary({
+        company: getCurrentCarrierProfile().title,
+        workflow: "Analyse...",
+        logic: "-",
     });
     renderAttention({
         level: "-",
@@ -390,6 +440,11 @@ form.addEventListener("submit", async (event) => {
             priority: data.priority_label,
             action: data.recommended_next_action_label,
         });
+        setWorkflowSummary({
+            company: data.carrier_profile_label,
+            workflow: data.target_workflow_label,
+            logic: data.target_workflow_reason,
+        });
         renderAttention({
             level: data.attention_level_label,
             score: data.attention_score,
@@ -405,6 +460,11 @@ form.addEventListener("submit", async (event) => {
             category: "-",
             priority: "-",
             action: "-",
+        });
+        setWorkflowSummary({
+            company: getCurrentCarrierProfile().title,
+            workflow: "Erreur",
+            logic: "-",
         });
         renderAttention({
             level: "-",
@@ -557,6 +617,22 @@ function deactivateDropzone(event) {
         event.preventDefault();
     }
     csvDropzone.classList.remove("is-active");
+}
+
+function setWorkflowSummary({ company, workflow, logic }) {
+    workflowSummary.innerHTML = `
+        <div><dt>Entreprise</dt><dd>${escapeHtml(company)}</dd></div>
+        <div><dt>Workflow</dt><dd>${escapeHtml(workflow)}</dd></div>
+        <div><dt>Logique</dt><dd>${escapeHtml(logic)}</dd></div>
+    `;
+}
+
+function setDocumentWorkflowSummary({ company, workflow, logic }) {
+    documentWorkflowSummary.innerHTML = `
+        <div><dt>Entreprise</dt><dd>${escapeHtml(company)}</dd></div>
+        <div><dt>Workflow</dt><dd>${escapeHtml(workflow)}</dd></div>
+        <div><dt>Logique</dt><dd>${escapeHtml(logic)}</dd></div>
+    `;
 }
 
 function renderVerifiedWebSources(target, items) {
@@ -1748,6 +1824,9 @@ function renderCarrierProfile() {
         .map((item) => `<li>${escapeHtml(item)}</li>`)
         .join("");
     carrierRulesList.innerHTML = profile.rules.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+    carrierWorkflowsList.innerHTML = profile.workflows
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("");
     carrierProfileReadonly.value = profile.title;
 }
 

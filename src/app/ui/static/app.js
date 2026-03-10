@@ -14,6 +14,10 @@ const carrierFocusList = document.getElementById("carrier-focus-list");
 const carrierDocumentsList = document.getElementById("carrier-documents-list");
 const carrierRulesList = document.getElementById("carrier-rules-list");
 const carrierWorkflowsList = document.getElementById("carrier-workflows-list");
+const workflowGuideCards = document.getElementById("workflow-guide-cards");
+const claimsModuleGuide = document.getElementById("claims-module-guide");
+const documentModuleGuide = document.getElementById("document-module-guide");
+const followupModuleGuide = document.getElementById("followup-module-guide");
 const fillExample = document.getElementById("fill-example");
 const refreshStackStatusButton = document.getElementById("refresh-stack-status");
 const summary = document.getElementById("summary");
@@ -255,6 +259,165 @@ const CARRIER_PROFILES = {
         },
     },
 };
+
+const WORKFLOW_PLAYBOOKS = {
+    generic: [
+        {
+            id: "generic-intake",
+            module: "claims",
+            title: "Trier une demande entrante",
+            when: "Quand un mail, un message ou un dossier doit etre qualifie rapidement.",
+            inputs: ["Canal", "Texte de la demande", "Pieces jointes si connues"],
+            outputs: ["Categorie", "Priorite", "Action suivante", "Statut bloque ou non"],
+        },
+        {
+            id: "generic-docs",
+            module: "document",
+            title: "Verifier un dossier incomplet",
+            when: "Quand tu veux savoir s'il manque des pieces avant traitement humain.",
+            inputs: ["Type de dossier", "Contexte", "Pieces deja recues"],
+            outputs: ["Taux de completude", "Pieces manquantes", "Message client pret"],
+        },
+        {
+            id: "generic-followup",
+            module: "followup",
+            title: "Preparer une relance administrative",
+            when: "Quand une facture, un devis ou un justificatif reste sans retour.",
+            inputs: ["Contexte", "Retard", "Pieces attendues", "Destinataire"],
+            outputs: ["Urgence", "Statut de relance", "Sujet", "Message pret a envoyer"],
+        },
+    ],
+    service_b2b: [
+        {
+            id: "service-sav",
+            module: "claims",
+            title: "Trier SAV et reclamations clients",
+            when: "Quand un client relance, reclame ou attend un retour sur un devis.",
+            inputs: ["Email entrant", "Reference client", "Pieces jointes"],
+            outputs: ["Workflow cible SAV/reclamation", "Priorite", "Action immediate"],
+        },
+        {
+            id: "service-docs",
+            module: "document",
+            title: "Verifier les pieces de validation",
+            when: "Quand il faut confirmer qu'un dossier est complet avant execution.",
+            inputs: ["Type de dossier", "Justificatifs recents", "Contexte client"],
+            outputs: ["Pieces manquantes", "Dossier exploitable ou non", "Message de demande"],
+        },
+        {
+            id: "service-followup",
+            module: "followup",
+            title: "Relancer un client pour piece ou devis",
+            when: "Quand un devis signe ou une piece bloque la suite du dossier.",
+            inputs: ["Retard", "Pieces attendues", "Contexte libre"],
+            outputs: ["Relance prete a envoyer", "Urgence", "Workflow de suivi"],
+        },
+    ],
+    immobilier_syndic: [
+        {
+            id: "immo-intake",
+            module: "claims",
+            title: "Prioriser un incident ou sinistre",
+            when: "Quand un locataire ou coproprietaire signale un probleme urgent.",
+            inputs: ["Canal", "Texte du signalement", "Devis ou photos"],
+            outputs: ["Priorite", "Blocage documentaire", "Orientation du dossier"],
+        },
+        {
+            id: "immo-docs",
+            module: "document",
+            title: "Verifier un dossier travaux",
+            when: "Quand un devis, des photos ou des justificatifs doivent etre controles.",
+            inputs: ["Contexte du dossier", "Pieces deja recues"],
+            outputs: ["Completude", "Pieces manquantes", "Prochaine action"],
+        },
+        {
+            id: "immo-followup",
+            module: "followup",
+            title: "Relancer sur pieces locatives",
+            when: "Quand un dossier reste bloque faute de bail, devis ou justificatif.",
+            inputs: ["Pieces recues", "Pieces attendues", "Retard"],
+            outputs: ["Message de relance", "Urgence", "Statut du dossier"],
+        },
+    ],
+    negoce_adv: [
+        {
+            id: "negoce-intake",
+            module: "claims",
+            title: "Trier litiges de commande et factures",
+            when: "Quand une commande, une livraison ou une facture declenche une relance.",
+            inputs: ["Texte client", "BL", "Facture", "Reference commande"],
+            outputs: ["Workflow ADV cible", "Priorite", "File facture/litige"],
+        },
+        {
+            id: "negoce-docs",
+            module: "document",
+            title: "Verifier la liasse commande",
+            when: "Quand il faut controler BL, devis, facture et references avant traitement.",
+            inputs: ["Documents de commande", "Contexte"],
+            outputs: ["Pieces manquantes", "Dossier finalisable ou non"],
+        },
+        {
+            id: "negoce-followup",
+            module: "followup",
+            title: "Relancer facture ou devis",
+            when: "Quand un paiement, une validation ou un devis reste en attente.",
+            inputs: ["Montant", "Retard", "Contexte"],
+            outputs: ["Message de relance facture/devis", "Urgence", "Workflow cible"],
+        },
+    ],
+    cabinet_gestion: [
+        {
+            id: "cabinet-intake",
+            module: "claims",
+            title: "Qualifier un dossier administratif",
+            when: "Quand un dossier client arrive avec des justificatifs disperses.",
+            inputs: ["Texte libre", "Reference dossier", "Pieces deja recues"],
+            outputs: ["Resume operateur", "Pieces manquantes", "Action suivante"],
+        },
+        {
+            id: "cabinet-docs",
+            module: "document",
+            title: "Verifier les justificatifs comptables",
+            when: "Quand un RIB, une facture ou un document client manque pour cloture.",
+            inputs: ["Contexte", "Pieces deja recues"],
+            outputs: ["Controle de completude", "Message client pret"],
+        },
+        {
+            id: "cabinet-followup",
+            module: "followup",
+            title: "Relancer sur piece comptable",
+            when: "Quand un dossier reste en attente d'un RIB, justificatif ou facture.",
+            inputs: ["Pieces attendues", "Destinataire", "Retard"],
+            outputs: ["Relance exploitable", "Statut bloque ou pret"],
+        },
+    ],
+    niort_lab: [
+        {
+            id: "lab-intake",
+            module: "claims",
+            title: "Orchestrer un cas multi-entreprise",
+            when: "Quand il faut qualifier rapidement un cas avant routage API ou batch.",
+            inputs: ["Profil entreprise", "Texte", "Pieces", "Canal"],
+            outputs: ["Workflow cible", "Priorite", "Action standardisee"],
+        },
+        {
+            id: "lab-docs",
+            module: "document",
+            title: "Standardiser le controle documentaire",
+            when: "Quand plusieurs entreprises utilisent la meme logique de completude.",
+            inputs: ["Type de dossier", "Pieces", "Contexte"],
+            outputs: ["Etat documentaire", "Demande de pieces", "Sortie standardisee"],
+        },
+        {
+            id: "lab-followup",
+            module: "followup",
+            title: "Produire une relance reutilisable",
+            when: "Quand il faut industrialiser les relances par workflow.",
+            inputs: ["Type de relance", "Retard", "Pieces attendues"],
+            outputs: ["Relance prete", "Urgence", "Workflow de diffusion"],
+        },
+    ],
+};
 const STORAGE_KEYS = {
     overrides: "mutuelle_ai_platform.manual_status_overrides",
     actionLog: "mutuelle_ai_platform.action_log_entries",
@@ -319,6 +482,7 @@ fillGammaExample.addEventListener("click", () => {
 carrierProfileSelect.addEventListener("change", () => {
     renderCarrierProfile();
 });
+workflowGuideCards.addEventListener("click", handleWorkflowGuideClick);
 claimText.addEventListener("input", autofillIdentifiers);
 csvFileInput.addEventListener("change", handleCsvUpload);
 csvRowSelect.addEventListener("change", applySelectedCsvRow);
@@ -2097,6 +2261,115 @@ function renderCarrierProfile() {
         .map((item) => `<li>${escapeHtml(item)}</li>`)
         .join("");
     carrierProfileReadonly.value = profile.title;
+    renderWorkflowGuides();
+    renderModuleGuides();
+}
+
+function renderWorkflowGuides() {
+    const profileKey = carrierProfileSelect.value || "generic";
+    const cards = WORKFLOW_PLAYBOOKS[profileKey] || WORKFLOW_PLAYBOOKS.generic;
+    workflowGuideCards.innerHTML = cards
+        .map(
+            (card) => `
+                <article class="workflow-guide-card">
+                    <p class="section-kicker">${escapeHtml(getModuleLabel(card.module))}</p>
+                    <h3>${escapeHtml(card.title)}</h3>
+                    <p class="hint">${escapeHtml(card.when)}</p>
+                    <p><strong>Entree minimale :</strong> ${escapeHtml(card.inputs.join(", "))}</p>
+                    <p><strong>Resultat attendu :</strong> ${escapeHtml(card.outputs.join(", "))}</p>
+                    <button type="button" class="secondary workflow-guide-button" data-workflow-id="${escapeHtml(card.id)}">
+                        Utiliser ce workflow
+                    </button>
+                </article>
+            `,
+        )
+        .join("");
+}
+
+function renderModuleGuides() {
+    const profileKey = carrierProfileSelect.value || "generic";
+    const cards = WORKFLOW_PLAYBOOKS[profileKey] || WORKFLOW_PLAYBOOKS.generic;
+    renderModuleGuide(claimsModuleGuide, cards.find((item) => item.module === "claims"));
+    renderModuleGuide(documentModuleGuide, cards.find((item) => item.module === "document"));
+    renderModuleGuide(followupModuleGuide, cards.find((item) => item.module === "followup"));
+}
+
+function renderModuleGuide(container, card) {
+    if (!card) {
+        container.innerHTML = '<h3>Guide indisponible</h3><p class="hint">Aucun workflow guide pour ce module.</p>';
+        return;
+    }
+
+    container.innerHTML = `
+        <h3>${escapeHtml(card.title)}</h3>
+        <p class="hint">${escapeHtml(card.when)}</p>
+        <p><strong>Entree minimale :</strong> ${escapeHtml(card.inputs.join(", "))}</p>
+        <p><strong>Sortie attendue :</strong> ${escapeHtml(card.outputs.join(", "))}</p>
+    `;
+}
+
+function getModuleLabel(module) {
+    if (module === "claims") {
+        return "Claims intake";
+    }
+    if (module === "document") {
+        return "Completude documentaire";
+    }
+    if (module === "followup") {
+        return "Relance administrative";
+    }
+    return "Workflow";
+}
+
+function handleWorkflowGuideClick(event) {
+    const button = event.target.closest(".workflow-guide-button");
+    if (!button) {
+        return;
+    }
+
+    const workflowId = button.dataset.workflowId || "";
+    const profileKey = carrierProfileSelect.value || "generic";
+    const cards = WORKFLOW_PLAYBOOKS[profileKey] || WORKFLOW_PLAYBOOKS.generic;
+    const card = cards.find((item) => item.id === workflowId);
+    const profile = getCurrentCarrierProfile();
+    if (!card) {
+        return;
+    }
+
+    if (card.module === "claims") {
+        fillExample.click();
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+    }
+
+    if (card.module === "document") {
+        fillDocumentExample.click();
+        if (profileKey === "immobilier_syndic") {
+            documentForm.document_type.value = "reimbursement";
+            documentForm.document_text.value = profile.sample.claim_text;
+            documentForm.attached_documents.value = profile.sample.attached_documents;
+        }
+        documentForm.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+    }
+
+    if (card.module === "followup") {
+        fillFollowupExample.click();
+        if (profileKey === "negoce_adv") {
+            followupForm.followup_type.value = "invoice";
+            followupForm.context_text.value = profile.sample.claim_text;
+            followupForm.attached_documents.value = profile.sample.attached_documents;
+            followupForm.expected_documents.value = "bon de commande signe";
+            followupForm.days_overdue.value = "12";
+            followupForm.outstanding_amount.value = "245.90";
+        } else if (profileKey === "cabinet_gestion") {
+            followupForm.followup_type.value = "missing_document";
+            followupForm.context_text.value = profile.sample.claim_text;
+            followupForm.attached_documents.value = profile.sample.attached_documents;
+            followupForm.expected_documents.value = "RIB, facture";
+        }
+        followupForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
 }
 
 function addLogEntry({ action, source, caseRef, detail }) {

@@ -753,6 +753,41 @@ button:disabled {
     font: 400 0.92rem/1.5 "Segoe UI", sans-serif;
 }
 
+.workflow-guide-panel {
+    margin-top: 28px;
+    display: grid;
+    gap: 16px;
+}
+
+.workflow-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.workflow-guide-card,
+.module-guide {
+    padding: 16px;
+    border: 1px solid rgba(216, 207, 190, 0.9);
+    border-radius: 18px;
+    background: #faf5eb;
+}
+
+.workflow-guide-card h3,
+.module-guide h3 {
+    margin: 0 0 10px;
+    font-size: 1rem;
+}
+
+.workflow-guide-card p,
+.module-guide p {
+    margin: 8px 0 0;
+}
+
+.workflow-guide-button {
+    margin-top: 14px;
+}
+
 @media (max-width: 640px) {
     .layout {
         padding: 20px 14px 40px;

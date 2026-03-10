@@ -4,6 +4,7 @@ from app.schemas.automation import (
     ClaimIntakeBatchRequest,
     ClaimIntakeRequest,
     DocumentCompletenessRequest,
+    FollowupAssistantRequest,
 )
 from app.services.automation_service import AutomationService
 
@@ -322,3 +323,58 @@ def test_document_completeness_selects_immobilier_workflow() -> None:
     assert result["carrier_profile"] == "immobilier_syndic"
     assert result["target_workflow"] == "immobilier_dossiers_incomplets"
     assert result["target_workflow_label"] == "Relances sur dossiers incomplets"
+
+
+def test_followup_assistant_builds_missing_document_followup() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_followup_assistant(
+            FollowupAssistantRequest(
+                carrier_profile="cabinet_gestion",
+                followup_type="missing_document",
+                customer_id="CL-7001",
+                contract_id="DOS-4512",
+                recipient_name="Mme Martin",
+                context_text="Il manque encore le bon de commande signe et le RIB pour finaliser le dossier.",
+                attached_documents=["devis signe"],
+                expected_documents=["bon de commande", "RIB"],
+                message_tone="neutral",
+                output_channel="email",
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["module"] == "followup_assistant"
+    assert result["target_workflow"] == "cabinet_pieces_comptables_manquantes"
+    assert "bon de commande" in result["missing_documents"]
+    assert result["followup_status"] == "blocked"
+    assert "Mme Martin" in result["client_request_message"]
+
+
+def test_followup_assistant_builds_invoice_followup_for_negoce() -> None:
+    service = AutomationService()
+
+    result = asyncio.run(
+        service.run_followup_assistant(
+            FollowupAssistantRequest(
+                carrier_profile="negoce_adv",
+                followup_type="invoice",
+                customer_id="CL-5504",
+                contract_id="CMD-8122",
+                context_text="Facture en attente de paiement apres livraison partielle.",
+                attached_documents=["facture", "bon de livraison"],
+                outstanding_amount=245.9,
+                days_overdue=12,
+                message_tone="direct",
+                output_channel="email",
+                provider="mock",
+            )
+        )
+    )
+
+    assert result["target_workflow"] == "negoce_suivi_facturation_clients"
+    assert result["followup_type_label"] == "Relance facture"
+    assert result["urgency_level"] == "elevated"
+    assert "245.90 EUR" in result["client_request_message"]

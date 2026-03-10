@@ -696,6 +696,163 @@
             </ul>
         </section>
 
+        <section class="panel">
+            <div>
+                <p class="section-kicker">Relance administrative</p>
+                <h2>Preparer une relance facture, devis ou piece manquante</h2>
+                <p class="hint">
+                    Ce module sert a generer rapidement une relance exploitable pour une facture en attente,
+                    un devis a confirmer ou un dossier bloque faute de justificatifs.
+                </p>
+            </div>
+
+            <form id="followup-form" class="form">
+                <label>
+                    Type de relance
+                    <select name="followup_type">
+                        <option value="missing_document">Piece manquante</option>
+                        <option value="invoice">Facture</option>
+                        <option value="quote">Devis</option>
+                    </select>
+                </label>
+
+                <label>
+                    ID client
+                    <input type="text" name="customer_id" placeholder="Ex: CL-2026-001">
+                </label>
+
+                <label>
+                    ID dossier
+                    <input type="text" name="contract_id" placeholder="Ex: DOS-7788">
+                </label>
+
+                <label>
+                    Destinataire
+                    <input type="text" name="recipient_name" placeholder="Ex: M. Martin">
+                </label>
+
+                <label>
+                    Montant en attente
+                    <input type="number" step="0.01" min="0" name="outstanding_amount" placeholder="Ex: 245.90">
+                </label>
+
+                <label>
+                    Jours de retard
+                    <input type="number" min="0" name="days_overdue" placeholder="Ex: 12">
+                </label>
+
+                <label>
+                    Provider IA
+                    <select name="provider">
+                        <option value="mock">Mock (recommande pour tester)</option>
+                        <option value="ollama">Ollama local</option>
+                    </select>
+                </label>
+
+                <label>
+                    Ton du message
+                    <select name="message_tone">
+                        <option value="neutral">Neutre</option>
+                        <option value="commercial">Plus commercial</option>
+                        <option value="direct">Plus direct operateur</option>
+                    </select>
+                </label>
+
+                <label>
+                    Canal de sortie
+                    <select name="output_channel">
+                        <option value="email">Email</option>
+                        <option value="sms">SMS</option>
+                        <option value="courrier">Courrier</option>
+                    </select>
+                </label>
+
+                <label>
+                    Canal d'entree
+                    <select name="channel">
+                        <option value="email">Email</option>
+                        <option value="telephone">Telephone</option>
+                        <option value="courrier">Courrier</option>
+                        <option value="portail">Portail</option>
+                    </select>
+                </label>
+
+                <label class="full">
+                    Pieces deja recues
+                    <input type="text" name="attached_documents" placeholder="Ex: devis signe, facture, bon de commande">
+                </label>
+
+                <label class="full">
+                    Pieces attendues
+                    <input type="text" name="expected_documents" placeholder="Ex: bon de commande, RIB, justificatif">
+                </label>
+
+                <label class="full">
+                    Contexte de relance
+                    <textarea
+                        name="context_text"
+                        rows="6"
+                        placeholder="Ex: Bonjour, le client attend un retour sur sa facture depuis 12 jours et il manque encore le bon de commande signe."
+                    ></textarea>
+                </label>
+
+                <div class="actions">
+                    <button type="submit">Preparer la relance</button>
+                    <button type="button" id="fill-followup-example" class="secondary">Charger un exemple</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="results-grid">
+            <article class="card">
+                <h2>Statut de relance</h2>
+                <dl id="followup-summary" class="summary">
+                    <div><dt>Type</dt><dd>-</dd></div>
+                    <div><dt>Urgence</dt><dd>-</dd></div>
+                    <div><dt>Statut</dt><dd>-</dd></div>
+                </dl>
+            </article>
+
+            <article class="card">
+                <h2>Workflow relance</h2>
+                <dl id="followup-workflow-summary" class="summary">
+                    <div><dt>Entreprise</dt><dd>-</dd></div>
+                    <div><dt>Workflow</dt><dd>-</dd></div>
+                    <div><dt>Logique</dt><dd>-</dd></div>
+                </dl>
+            </article>
+
+            <article class="card">
+                <h2>Pieces manquantes</h2>
+                <ul id="followup-missing-list" class="list">
+                    <li>Aucune relance preparee pour l'instant.</li>
+                </ul>
+            </article>
+
+            <article class="card">
+                <h2>Resume relance</h2>
+                <pre id="followup-operator-summary" class="output">Le resume de relance apparaitra ici.</pre>
+            </article>
+        </section>
+
+        <section class="card">
+            <h2>Message de relance pret a envoyer</h2>
+            <dl id="followup-request-summary" class="summary">
+                <div><dt>Ton</dt><dd>-</dd></div>
+                <div><dt>Canal</dt><dd>-</dd></div>
+                <div><dt>Sujet</dt><dd>-</dd></div>
+            </dl>
+            <pre id="followup-request-message" class="output">Le message de relance apparaitra ici.</pre>
+            <div class="actions">
+                <button type="button" id="copy-followup-message" class="secondary">Copier le message</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Reponse relance complete</h2>
+            <pre id="followup-output" class="output">Le JSON de relance apparaitra ici.</pre>
+        </section>
+
         <section class="card">
             <h2>Journal d'actions</h2>
             <div class="batch-toolbar">

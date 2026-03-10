@@ -52,6 +52,26 @@ class ClaimIntakeBatchRequest(BaseModel):
     items: list[ClaimIntakeRequest] = Field(..., min_length=1, description="Liste des dossiers a traiter")
 
 
+class FollowupAssistantRequest(BaseModel):
+    carrier_profile: str | None = Field(default="generic", description="Entreprise cible")
+    followup_type: str = Field(
+        default="missing_document",
+        description="Type de relance: invoice, quote, missing_document",
+    )
+    customer_id: str | None = Field(default=None, description="Identifiant client si connu")
+    contract_id: str | None = Field(default=None, description="Reference dossier si connue")
+    recipient_name: str | None = Field(default=None, description="Nom du destinataire si connu")
+    channel: str = Field(default="email", description="Canal d'entree")
+    context_text: str = Field(..., description="Contexte libre du dossier ou de la relance")
+    attached_documents: list[str] = Field(default_factory=list, description="Pieces deja recues")
+    expected_documents: list[str] = Field(default_factory=list, description="Pieces attendues si connues")
+    outstanding_amount: float | None = Field(default=None, description="Montant en attente si pertinent")
+    days_overdue: int | None = Field(default=None, description="Nombre de jours de retard")
+    message_tone: str = Field(default="neutral", description="Ton du message client")
+    output_channel: str = Field(default="email", description="Canal de sortie")
+    provider: str | None = Field(default=None, description="Provider IA a utiliser")
+
+
 class OperatorActionLogEntry(BaseModel):
     timestamp: str
     action: str

@@ -1,6 +1,8 @@
 const form = document.getElementById("claims-form");
 const documentForm = document.getElementById("document-form");
+const followupForm = document.getElementById("followup-form");
 const fillDocumentExample = document.getElementById("fill-document-example");
+const fillFollowupExample = document.getElementById("fill-followup-example");
 const carrierProfileSelect = document.getElementById("carrier-profile");
 const carrierProfileReadonly = document.getElementById("carrier-profile-readonly");
 const carrierBadge = document.getElementById("carrier-badge");
@@ -17,8 +19,11 @@ const workflowSummary = document.getElementById("workflow-summary");
 const stackHealthSummary = document.getElementById("stack-health-summary");
 const stackHealthGrid = document.getElementById("stack-health-grid");
 const documentSummary = document.getElementById("document-summary");
+const followupSummary = document.getElementById("followup-summary");
 const documentWorkflowSummary = document.getElementById("document-workflow-summary");
+const followupWorkflowSummary = document.getElementById("followup-workflow-summary");
 const documentRequestSummary = document.getElementById("document-request-summary");
+const followupRequestSummary = document.getElementById("followup-request-summary");
 const attentionSummary = document.getElementById("attention-summary");
 const missingList = document.getElementById("missing-list");
 const documentMissingList = document.getElementById("document-missing-list");
@@ -29,7 +34,12 @@ const operatorSummary = document.getElementById("operator-summary");
 const documentOutput = document.getElementById("document-output");
 const documentRequestMessage = document.getElementById("document-request-message");
 const documentWebSources = document.getElementById("document-web-sources");
+const followupMissingList = document.getElementById("followup-missing-list");
 const copyDocumentMessageButton = document.getElementById("copy-document-message");
+const copyFollowupMessageButton = document.getElementById("copy-followup-message");
+const followupOperatorSummary = document.getElementById("followup-operator-summary");
+const followupRequestMessage = document.getElementById("followup-request-message");
+const followupOutput = document.getElementById("followup-output");
 const rawOutput = document.getElementById("raw-output");
 const batchOutput = document.getElementById("batch-output");
 const batchSummary = document.getElementById("batch-summary");
@@ -272,6 +282,23 @@ fillDocumentExample.addEventListener("click", () => {
     documentForm.attached_documents.value = "facture, numero adherent";
 });
 
+fillFollowupExample.addEventListener("click", () => {
+    followupForm.followup_type.value = "missing_document";
+    followupForm.customer_id.value = "CL-7001";
+    followupForm.contract_id.value = "DOS-4512";
+    followupForm.recipient_name.value = "Mme Martin";
+    followupForm.outstanding_amount.value = "";
+    followupForm.days_overdue.value = "7";
+    followupForm.provider.value = "mock";
+    followupForm.message_tone.value = "neutral";
+    followupForm.output_channel.value = "email";
+    followupForm.channel.value = "email";
+    followupForm.attached_documents.value = "devis signe";
+    followupForm.expected_documents.value = "bon de commande, RIB";
+    followupForm.context_text.value =
+        "Bonjour, le client attend une validation de dossier depuis une semaine et il manque encore le bon de commande signe et le RIB.";
+});
+
 carrierProfileSelect.addEventListener("change", () => {
     renderCarrierProfile();
 });
@@ -308,6 +335,9 @@ dropFolderZone.addEventListener("dragleave", deactivateDropFolderZone);
 dropFolderZone.addEventListener("drop", handleDropFolderDrop);
 copyDocumentMessageButton.addEventListener("click", () => {
     void copyToClipboard(documentRequestMessage.textContent, "Message documentaire copie.");
+});
+copyFollowupMessageButton.addEventListener("click", () => {
+    void copyToClipboard(followupRequestMessage.textContent, "Message de relance copie.");
 });
 
 documentForm.addEventListener("submit", async (event) => {
@@ -404,6 +434,86 @@ documentForm.addEventListener("submit", async (event) => {
         documentPresentList.innerHTML = "<li>Aucun resultat.</li>";
         renderVerifiedWebSources(documentWebSources, []);
         documentOutput.textContent = String(error);
+    }
+});
+
+followupForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const payload = {
+        followup_type: followupForm.followup_type.value,
+        customer_id: followupForm.customer_id.value || null,
+        contract_id: followupForm.contract_id.value || null,
+        recipient_name: followupForm.recipient_name.value || null,
+        outstanding_amount: followupForm.outstanding_amount.value ? Number(followupForm.outstanding_amount.value) : null,
+        days_overdue: followupForm.days_overdue.value ? Number(followupForm.days_overdue.value) : null,
+        provider: followupForm.provider.value,
+        carrier_profile: carrierProfileSelect.value,
+        message_tone: followupForm.message_tone.value,
+        output_channel: followupForm.output_channel.value,
+        channel: followupForm.channel.value,
+        context_text: followupForm.context_text.value,
+        attached_documents: followupForm.attached_documents.value.split(",").map((item) => item.trim()).filter(Boolean),
+        expected_documents: followupForm.expected_documents.value.split(",").map((item) => item.trim()).filter(Boolean),
+    };
+
+    setFollowupSummary({ type: "-", urgency: "-", status: "Preparation..." });
+    setFollowupWorkflowSummary({
+        company: getCurrentCarrierProfile().title,
+        workflow: "Analyse...",
+        logic: "-",
+    });
+    followupMissingList.innerHTML = "<li>Preparation en cours...</li>";
+    followupOperatorSummary.textContent = "Chargement...";
+    renderFollowupRequestMessage(payload.message_tone, payload.output_channel, "-", "Generation du message en cours...");
+    followupOutput.textContent = "Chargement...";
+
+    try {
+        const response = await fetch("/automations/followup-assistant", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(JSON.stringify(data, null, 2));
+        }
+
+        setFollowupSummary({
+            type: data.followup_type_label,
+            urgency: data.urgency_level_label,
+            status: data.followup_status_label,
+        });
+        setFollowupWorkflowSummary({
+            company: data.carrier_profile_label,
+            workflow: data.target_workflow_label,
+            logic: data.target_workflow_reason_display || data.target_workflow_reason,
+        });
+        renderFollowupMissing(data.missing_documents || []);
+        followupOperatorSummary.textContent = data.operator_summary_display || data.operator_summary;
+        renderFollowupRequestMessage(
+            data.message_tone,
+            data.output_channel,
+            data.client_request_subject_display || data.client_request_subject,
+            data.client_request_message_display || data.client_request_message,
+        );
+        followupOutput.textContent = JSON.stringify(data, null, 2);
+    } catch (error) {
+        setFollowupSummary({ type: payload.followup_type, urgency: "-", status: "Erreur" });
+        setFollowupWorkflowSummary({
+            company: getCurrentCarrierProfile().title,
+            workflow: "Erreur",
+            logic: "-",
+        });
+        followupMissingList.innerHTML = "<li>La preparation a echoue.</li>";
+        followupOperatorSummary.textContent = "Verifier que l'API tourne et que le provider choisi est disponible.";
+        renderFollowupRequestMessage(
+            payload.message_tone,
+            payload.output_channel,
+            "-",
+            "Impossible de preparer la relance.",
+        );
+        followupOutput.textContent = String(error);
     }
 });
 
@@ -1327,6 +1437,22 @@ function setDocumentSummary({ type, status, completion }) {
     `;
 }
 
+function setFollowupSummary({ type, urgency, status }) {
+    followupSummary.innerHTML = `
+        <div><dt>Type</dt><dd>${escapeHtml(type)}</dd></div>
+        <div><dt>Urgence</dt><dd>${escapeHtml(urgency)}</dd></div>
+        <div><dt>Statut</dt><dd>${escapeHtml(status)}</dd></div>
+    `;
+}
+
+function setFollowupWorkflowSummary({ company, workflow, logic }) {
+    followupWorkflowSummary.innerHTML = `
+        <div><dt>Entreprise</dt><dd>${escapeHtml(company)}</dd></div>
+        <div><dt>Workflow</dt><dd>${escapeHtml(workflow)}</dd></div>
+        <div><dt>Logique</dt><dd>${escapeHtml(logic)}</dd></div>
+    `;
+}
+
 function renderDocumentRequestMessage(tone, channel, subject, message) {
     const toneLabel = {
         neutral: "Neutre",
@@ -1344,6 +1470,36 @@ function renderDocumentRequestMessage(tone, channel, subject, message) {
         <div><dt>Sujet</dt><dd>${escapeHtml(subject || "-")}</dd></div>
     `;
     documentRequestMessage.textContent = message || "Le message client apparaitra ici.";
+}
+
+function renderFollowupRequestMessage(tone, channel, subject, message) {
+    const toneLabel = {
+        neutral: "Neutre",
+        commercial: "Plus commercial",
+        direct: "Plus direct operateur",
+    }[tone] || tone || "-";
+    const channelLabel = {
+        email: "Email",
+        sms: "SMS",
+        courrier: "Courrier",
+    }[channel] || channel || "-";
+    followupRequestSummary.innerHTML = `
+        <div><dt>Ton</dt><dd>${escapeHtml(toneLabel)}</dd></div>
+        <div><dt>Canal</dt><dd>${escapeHtml(channelLabel)}</dd></div>
+        <div><dt>Sujet</dt><dd>${escapeHtml(subject || "-")}</dd></div>
+    `;
+    followupRequestMessage.textContent = message || "Le message de relance apparaitra ici.";
+}
+
+function renderFollowupMissing(items) {
+    if (!items || items.length === 0) {
+        followupMissingList.innerHTML = "<li>Aucune piece manquante detectee.</li>";
+        return;
+    }
+
+    followupMissingList.innerHTML = items
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("");
 }
 
 function renderDocumentLists(data) {

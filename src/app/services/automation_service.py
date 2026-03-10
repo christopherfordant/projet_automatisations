@@ -12,6 +12,7 @@ from app.schemas.automation import (
     ClaimIntakeRequest,
     DocumentCompletenessRequest,
     DocumentAnalysisRequest,
+    FollowupAssistantRequest,
 )
 
 
@@ -64,6 +65,18 @@ class AutomationService:
         "critical": "Critique",
         "elevated": "Elevee",
         "standard": "Standard",
+    }
+
+    FOLLOWUP_TYPE_LABELS = {
+        "invoice": "Relance facture",
+        "quote": "Relance devis",
+        "missing_document": "Relance piece manquante",
+    }
+
+    FOLLOWUP_STATUS_LABELS = {
+        "ready_to_send": "Pret a envoyer",
+        "needs_review": "A relire",
+        "blocked": "Bloque",
     }
 
     DOCUMENT_REQUIREMENTS = {
@@ -389,6 +402,106 @@ class AutomationService:
             "operator_summary": operator_summary,
             "operator_summary_display": operator_summary,
             "operator_summary_sections": self._split_message_sections(operator_summary),
+            "ai_provider": ai_result["provider"],
+            "ai_model": ai_result["model"],
+        }
+
+    async def run_followup_assistant(
+        self,
+        payload: FollowupAssistantRequest,
+    ) -> dict[str, object]:
+        settings = get_settings()
+        provider = get_provider(payload.provider)
+        company_profile = get_company_workflow_profile(payload.carrier_profile)
+        followup_type = self._normalize_followup_type(payload.followup_type, payload.context_text)
+        expected_documents = [item.strip() for item in payload.expected_documents if item.strip()]
+        attached_documents = [item.strip() for item in payload.attached_documents if item.strip()]
+        missing_documents = [
+            item for item in expected_documents if item.lower() not in {doc.lower() for doc in attached_documents}
+        ]
+        urgency_level = self._derive_followup_urgency(
+            followup_type=followup_type,
+            days_overdue=payload.days_overdue,
+            context_text=payload.context_text,
+            missing_documents=missing_documents,
+        )
+        target_workflow = self._resolve_company_followup_workflow(
+            carrier_profile=company_profile.code,
+            followup_type=followup_type,
+            urgency_level=urgency_level,
+            missing_documents=missing_documents,
+        )
+        prompt = PromptRequest(
+            system_prompt=(
+                "Tu aides un back-office PME a preparer une relance client ou fournisseur. "
+                "Tu produis un resume operateur tres court en francais."
+            ),
+            user_prompt=(
+                f"Profil: {company_profile.label}\n"
+                f"Type de relance: {followup_type}\n"
+                f"Client: {payload.customer_id or 'inconnu'}\n"
+                f"Dossier: {payload.contract_id or 'inconnu'}\n"
+                f"Retard jours: {payload.days_overdue or 0}\n"
+                f"Montant: {payload.outstanding_amount or 0}\n"
+                f"Contexte:\n{payload.context_text}"
+            ),
+            model=settings.default_ai_model,
+        )
+        ai_result = await provider.generate(prompt)
+        message = self._build_followup_message(
+            followup_type=followup_type,
+            recipient_name=payload.recipient_name,
+            contract_id=payload.contract_id,
+            missing_documents=missing_documents,
+            outstanding_amount=payload.outstanding_amount,
+            days_overdue=payload.days_overdue,
+            tone=payload.message_tone,
+            output_channel=payload.output_channel,
+        )
+        operator_summary = self._flatten_message(str(ai_result["content"]))
+        context_text_display = self._flatten_message(payload.context_text)
+        status = "blocked" if followup_type == "missing_document" and missing_documents else "ready_to_send"
+        if urgency_level == "critical":
+            status = "needs_review"
+
+        return {
+            "module": "followup_assistant",
+            "carrier_profile": company_profile.code,
+            "carrier_profile_label": company_profile.label,
+            "target_company": company_profile.target_company,
+            "target_workflow": target_workflow,
+            "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
+            "target_workflow_reason": company_profile.positioning,
+            "target_workflow_reason_display": self._flatten_message(company_profile.positioning),
+            "followup_type": followup_type,
+            "followup_type_label": self.FOLLOWUP_TYPE_LABELS.get(followup_type, followup_type),
+            "customer_id": payload.customer_id,
+            "contract_id": payload.contract_id,
+            "recipient_name": payload.recipient_name,
+            "context_text": payload.context_text,
+            "context_text_display": context_text_display,
+            "context_text_sections": self._split_message_sections(context_text_display),
+            "expected_documents": expected_documents,
+            "attached_documents": attached_documents,
+            "attached_documents_display": ", ".join(attached_documents) if attached_documents else "",
+            "missing_documents": missing_documents,
+            "missing_documents_display": ", ".join(missing_documents) if missing_documents else "",
+            "outstanding_amount": payload.outstanding_amount,
+            "days_overdue": payload.days_overdue,
+            "urgency_level": urgency_level,
+            "urgency_level_label": self.ATTENTION_LEVEL_LABELS.get(urgency_level, urgency_level),
+            "followup_status": status,
+            "followup_status_label": self.FOLLOWUP_STATUS_LABELS.get(status, status),
+            "client_request_subject": message["subject"],
+            "client_request_subject_display": message["subject"],
+            "client_request_message": message["message"],
+            "client_request_message_display": message["message"],
+            "client_request_message_sections": self._split_message_sections(message["message"]),
+            "operator_summary": operator_summary,
+            "operator_summary_display": operator_summary,
+            "operator_summary_sections": self._split_message_sections(operator_summary),
+            "message_tone": payload.message_tone,
+            "output_channel": payload.output_channel,
             "ai_provider": ai_result["provider"],
             "ai_model": ai_result["model"],
         }
@@ -836,6 +949,125 @@ class AutomationService:
                 }
             )
         return decorated
+
+    @classmethod
+    def _normalize_followup_type(cls, followup_type: str, context_text: str) -> str:
+        normalized = (followup_type or "").strip().lower()
+        if normalized in cls.FOLLOWUP_TYPE_LABELS:
+            return normalized
+        context = context_text.lower()
+        if "facture" in context or "paiement" in context:
+            return "invoice"
+        if "devis" in context:
+            return "quote"
+        return "missing_document"
+
+    @staticmethod
+    def _derive_followup_urgency(
+        followup_type: str,
+        days_overdue: int | None,
+        context_text: str,
+        missing_documents: list[str],
+    ) -> str:
+        normalized_text = context_text.lower()
+        if any(token in normalized_text for token in ("urgent", "bloque", "litige", "contentieux")):
+            return "critical"
+        if (days_overdue or 0) >= 15:
+            return "critical"
+        if missing_documents or followup_type in {"invoice", "quote"} or (days_overdue or 0) >= 5:
+            return "elevated"
+        return "standard"
+
+    @staticmethod
+    def _resolve_company_followup_workflow(
+        carrier_profile: str,
+        followup_type: str,
+        urgency_level: str,
+        missing_documents: list[str],
+    ) -> str:
+        if carrier_profile == "service_b2b":
+            if followup_type == "missing_document" or missing_documents:
+                return "service_b2b_relances_pieces"
+            if followup_type == "invoice":
+                return "service_b2b_reclamations_clients" if urgency_level == "critical" else "service_b2b_tri_demandes"
+            return "service_b2b_tri_demandes"
+        if carrier_profile == "immobilier_syndic":
+            if urgency_level == "critical":
+                return "immobilier_sinistres_urgents"
+            if missing_documents:
+                return "immobilier_dossiers_incomplets"
+            return "immobilier_suivi_dossiers_locatifs"
+        if carrier_profile == "negoce_adv":
+            if followup_type == "invoice" or urgency_level in {"critical", "elevated"}:
+                return "negoce_suivi_facturation_clients"
+            return "negoce_traitement_commandes"
+        if carrier_profile == "cabinet_gestion":
+            if missing_documents:
+                return "cabinet_pieces_comptables_manquantes"
+            return "cabinet_preparation_dossiers"
+        if carrier_profile == "niort_lab":
+            return "niortlab_batch_supervision" if urgency_level == "critical" else "niortlab_orchestration_multi_entreprise"
+        if missing_documents:
+            return "shared_document_completeness"
+        return "shared_claims_intake"
+
+    @staticmethod
+    def _build_followup_message(
+        followup_type: str,
+        recipient_name: str | None,
+        contract_id: str | None,
+        missing_documents: list[str],
+        outstanding_amount: float | None,
+        days_overdue: int | None,
+        tone: str,
+        output_channel: str,
+    ) -> dict[str, str]:
+        greeting = "Bonjour"
+        if recipient_name:
+            greeting = f"Bonjour {recipient_name}"
+
+        subject_map = {
+            "invoice": f"Relance facture - {contract_id or 'dossier en attente'}",
+            "quote": f"Relance devis - {contract_id or 'dossier en attente'}",
+            "missing_document": f"Pieces manquantes - {contract_id or 'dossier en attente'}",
+        }
+
+        if followup_type == "invoice":
+            amount_text = f" pour un montant de {outstanding_amount:.2f} EUR" if outstanding_amount is not None else ""
+            delay_text = f" en attente depuis {days_overdue} jour(s)" if days_overdue else ""
+            body = (
+                f"{greeting}, Merci de nous confirmer le traitement de la facture {contract_id or ''}{amount_text}{delay_text}. "
+                "Sans retour de votre part, le dossier restera en attente de validation."
+            )
+        elif followup_type == "quote":
+            delay_text = f" depose depuis {days_overdue} jour(s)" if days_overdue else ""
+            body = (
+                f"{greeting}, Nous revenons vers vous concernant le devis {contract_id or ''}{delay_text}. "
+                "Merci de nous confirmer sa validation ou les pieces a completer pour finaliser le traitement."
+            )
+        else:
+            documents = ", ".join(missing_documents) if missing_documents else "les justificatifs attendus"
+            body = (
+                f"{greeting}, Pour poursuivre le traitement du dossier {contract_id or ''}, il manque encore: {documents}. "
+                "Merci de nous transmettre ces elements pour debloquer l'instruction."
+            )
+
+        if tone == "commercial":
+            body += " Nous restons a votre disposition pour vous accompagner."
+        elif tone == "direct":
+            body += " Merci de traiter ce point rapidement."
+
+        if output_channel == "courrier":
+            body += " Cordialement, Service gestion."
+        elif output_channel == "sms":
+            body = body.replace("Merci de nous transmettre ces elements pour debloquer l'instruction.", "Merci d'envoyer les elements manquants rapidement.")
+        else:
+            body += " Cordialement, Service gestion."
+
+        return {
+            "subject": "" if output_channel == "sms" else subject_map.get(followup_type, "Relance dossier"),
+            "message": AutomationService._flatten_message(body),
+        }
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from app.api.routes import automations as automations_route_module
@@ -137,8 +139,13 @@ def test_claims_intake_complaint_is_marked_for_review() -> None:
     assert payload["business_status_label"] == "A revoir"
 
 
-def test_operator_state_can_be_saved_and_loaded(tmp_path, monkeypatch) -> None:
-    store = LocalStateStore(str(tmp_path / "operator_state.db"))
+def test_operator_state_can_be_saved_and_loaded(monkeypatch) -> None:
+    db_path = Path("local_data/test_operator_state.db")
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    if db_path.exists():
+        db_path.unlink()
+
+    store = LocalStateStore(str(db_path))
     monkeypatch.setattr(automations_route_module, "state_store", store)
 
     payload = {
@@ -179,3 +186,6 @@ def test_operator_state_can_be_saved_and_loaded(tmp_path, monkeypatch) -> None:
     assert loaded["manual_status_overrides"] == payload["manual_status_overrides"]
     assert loaded["action_log_entries"][0]["action"] == "Batch lance"
     assert loaded["last_batch_items"][0]["contract_id"] == "DOS-1"
+
+    if db_path.exists():
+        db_path.unlink()

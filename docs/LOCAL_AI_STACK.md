@@ -33,11 +33,15 @@ Cette base demarre:
 - `qdrant`
 - `ollama`
 
+Le mode Docker local active `N8N_RUNNERS_ENABLED=true` pour rester aligne avec les recommandations recentes de `n8n`.
+
 Si Docker n'est pas disponible, `n8n` peut aussi etre lance en local avec:
 
 ```powershell
 .\scripts\start_n8n_local.ps1
 ```
+
+Ce lanceur active lui aussi les `task runners`.
 
 En cas de conflit de schema SQLite entre deux versions de `n8n`, reinitialiser l'instance locale avec sauvegarde:
 

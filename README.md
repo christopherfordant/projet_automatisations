@@ -135,6 +135,8 @@ Cette commande demarre:
 - `Qdrant`
 - `Ollama`
 
+La stack Docker locale active aussi les `task runners` n8n via `N8N_RUNNERS_ENABLED=true`.
+
 3. Option `Supabase local`:
 
 ```powershell
@@ -150,6 +152,8 @@ Si Docker n'est pas disponible sur la machine, tu peux lancer `n8n` directement 
 ```
 
 Par defaut, l'interface sera disponible sur `http://127.0.0.1:5678`.
+
+Le lanceur local active aussi les `task runners` n8n pour rester compatible avec les versions recentes.
 
 Si `n8n` affiche une erreur de schema SQLite au premier acces, tu peux reinitialiser proprement ses donnees locales avec sauvegarde:
 

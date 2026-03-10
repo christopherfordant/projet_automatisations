@@ -25,6 +25,7 @@ const wizardRecap = document.getElementById("wizard-recap");
 const wizardPrev = document.getElementById("wizard-prev");
 const wizardNext = document.getElementById("wizard-next");
 const wizardApply = document.getElementById("wizard-apply");
+const wizardShowAll = document.getElementById("wizard-show-all");
 const claimsModuleGuide = document.getElementById("claims-module-guide");
 const documentModuleGuide = document.getElementById("document-module-guide");
 const followupModuleGuide = document.getElementById("followup-module-guide");
@@ -100,6 +101,7 @@ const dropFolderErrorPath = document.getElementById("drop-folder-error-path");
 const dropFolderIncomingList = document.getElementById("drop-folder-incoming-list");
 const dropFolderArchiveList = document.getElementById("drop-folder-archive-list");
 const dropFolderErrorList = document.getElementById("drop-folder-error-list");
+const moduleSections = document.querySelectorAll("[data-module-section]");
 let csvRows = [];
 let lastBatchItems = [];
 let manualStatusOverrides = {};
@@ -497,6 +499,7 @@ workflowGuideCards.addEventListener("click", handleWorkflowGuideClick);
 wizardPrev.addEventListener("click", () => moveWizard(-1));
 wizardNext.addEventListener("click", () => moveWizard(1));
 wizardApply.addEventListener("click", applyWizardToWorkflow);
+wizardShowAll.addEventListener("click", resetModuleFocus);
 wizardModule.addEventListener("change", renderWizardRecap);
 wizardGoal.addEventListener("change", renderWizardRecap);
 wizardContext.addEventListener("input", renderWizardRecap);
@@ -2410,6 +2413,7 @@ function renderWizardStep() {
     wizardPrev.disabled = wizardStep === 0;
     wizardNext.disabled = wizardStep === 2;
     wizardApply.disabled = wizardStep !== 2;
+    applyModuleFocus(wizardModule.value);
 }
 
 function renderWizardRecap() {
@@ -2453,6 +2457,21 @@ function applyWizardToWorkflow() {
     followupForm.expected_documents.value =
         wizardGoal.value === "missing" ? "piece manquante a preciser" : followupForm.expected_documents.value;
     followupForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function applyModuleFocus(module) {
+    moduleSections.forEach((section) => {
+        const isTarget = section.dataset.moduleSection === module;
+        section.classList.toggle("module-hidden", !isTarget);
+        section.classList.toggle("module-focused", isTarget);
+    });
+}
+
+function resetModuleFocus() {
+    moduleSections.forEach((section) => {
+        section.classList.remove("module-hidden");
+        section.classList.remove("module-focused");
+    });
 }
 
 function addLogEntry({ action, source, caseRef, detail }) {

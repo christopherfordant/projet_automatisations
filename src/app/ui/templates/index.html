@@ -203,6 +203,7 @@
                         <button type="button" id="wizard-prev" class="secondary">Precedent</button>
                         <button type="button" id="wizard-next">Suivant</button>
                         <button type="button" id="wizard-apply" class="secondary">Appliquer au workflow</button>
+                        <button type="button" id="wizard-show-all" class="secondary">Afficher tous les modules</button>
                     </div>
                 </div>
             </div>
@@ -331,7 +332,7 @@
                 </div>
             </div>
 
-            <form id="claims-form" class="form">
+            <form id="claims-form" class="form" data-module-section="claims">
                 <div class="module-guide full" id="claims-module-guide">
                     <h3>Guide claims intake</h3>
                     <p class="hint">Choisis un parcours guide pour afficher l'aide contextuelle.</p>
@@ -417,7 +418,7 @@
             </form>
         </section>
 
-        <section class="results-grid">
+        <section class="results-grid" data-module-section="claims">
             <article class="card">
                 <h2>Lecture rapide</h2>
                 <dl id="summary" class="summary">
@@ -456,17 +457,17 @@
             </article>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="claims">
             <h2>Resume operateur</h2>
             <pre id="operator-summary" class="output">Le resume apparaitra ici.</pre>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="claims">
             <h2>Reponse technique complete</h2>
             <pre id="raw-output" class="output">Le JSON complet apparaitra ici.</pre>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="claims">
             <h2>Sources web verifiees</h2>
             <ul id="claims-web-sources" class="list">
                 <li>Aucune source consultee.</li>
@@ -650,7 +651,7 @@
                 </p>
             </div>
 
-            <form id="document-form" class="form">
+            <form id="document-form" class="form" data-module-section="document">
                 <div class="module-guide full" id="document-module-guide">
                     <h3>Guide completude documentaire</h3>
                     <p class="hint">Choisis un parcours guide pour afficher l'aide contextuelle.</p>
@@ -729,7 +730,7 @@
             </form>
         </section>
 
-        <section class="results-grid">
+        <section class="results-grid" data-module-section="document">
             <article class="card">
                 <h2>Statut documentaire</h2>
                 <dl id="document-summary" class="summary">
@@ -763,12 +764,12 @@
             </article>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="document">
             <h2>Resume documentaire</h2>
             <pre id="document-output" class="output">Le resultat du controle documentaire apparaitra ici.</pre>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="document">
             <h2>Message client pret a envoyer</h2>
             <p class="hint">Genere automatiquement a partir des pieces manquantes detectees.</p>
             <dl id="document-request-summary" class="summary">
@@ -782,7 +783,7 @@
             </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="document">
             <h2>Sources web verifiees documentaires</h2>
             <ul id="document-web-sources" class="list">
                 <li>Aucune source consultee.</li>
@@ -799,7 +800,7 @@
                 </p>
             </div>
 
-            <form id="followup-form" class="form">
+            <form id="followup-form" class="form" data-module-section="followup">
                 <div class="module-guide full" id="followup-module-guide">
                     <h3>Guide relance administrative</h3>
                     <p class="hint">Choisis un parcours guide pour afficher l'aide contextuelle.</p>
@@ -902,7 +903,7 @@
             </form>
         </section>
 
-        <section class="results-grid">
+        <section class="results-grid" data-module-section="followup">
             <article class="card">
                 <h2>Statut de relance</h2>
                 <dl id="followup-summary" class="summary">
@@ -934,7 +935,7 @@
             </article>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="followup">
             <h2>Message de relance pret a envoyer</h2>
             <dl id="followup-request-summary" class="summary">
                 <div><dt>Ton</dt><dd>-</dd></div>
@@ -947,7 +948,7 @@
             </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-module-section="followup">
             <h2>Reponse relance complete</h2>
             <pre id="followup-output" class="output">Le JSON de relance apparaitra ici.</pre>
         </section>

@@ -798,6 +798,15 @@ button:disabled {
     display: none;
 }
 
+.module-hidden {
+    display: none !important;
+}
+
+.module-focused {
+    box-shadow: 0 18px 40px rgba(102, 76, 32, 0.12);
+    border-color: rgba(173, 130, 50, 0.5) !important;
+}
+
 .workflow-guide-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

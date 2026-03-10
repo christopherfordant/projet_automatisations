@@ -346,7 +346,7 @@ documentForm.addEventListener("submit", async (event) => {
         setDocumentWorkflowSummary({
             company: data.carrier_profile_label,
             workflow: data.target_workflow_label,
-            logic: data.target_workflow_reason,
+            logic: data.target_workflow_reason_display || data.target_workflow_reason,
         });
         renderDocumentLists(data);
         renderDocumentRequestMessage(
@@ -443,7 +443,7 @@ form.addEventListener("submit", async (event) => {
         setWorkflowSummary({
             company: data.carrier_profile_label,
             workflow: data.target_workflow_label,
-            logic: data.target_workflow_reason,
+            logic: data.target_workflow_reason_display || data.target_workflow_reason,
         });
         renderAttention({
             level: data.attention_level_label,
@@ -646,9 +646,10 @@ function renderVerifiedWebSources(target, items) {
             (item) => `
                 <li>
                     <strong>${escapeHtml(item.title || item.url)}</strong><br>
+                    ${item.title_display && item.title_display !== (item.title || item.url) ? `<span>${escapeHtml(item.title_display)}</span><br>` : ""}
                     <span>${escapeHtml(item.domain || "-")} • verifie le ${escapeHtml(formatCheckedAt(item.checked_at))}</span><br>
                     <a href="${escapeHtml(item.url)}" target="_blank" rel="noreferrer">Ouvrir la source</a>
-                    ${item.snippet ? `<br><span>${escapeHtml(item.snippet)}</span>` : ""}
+                    ${item.snippet_display ? `<br><span>${escapeHtml(item.snippet_display)}</span>` : ""}
                 </li>
             `,
         )
@@ -1367,7 +1368,7 @@ function renderMissingActionsPanel(items) {
                         </button>
                     </div>
                     <p class="hint">Informations a demander: ${escapeHtml(missing)}</p>
-                    <pre class="output action-message">${escapeHtml(item.client_request_message || "Aucun message genere.")}</pre>
+                    <pre class="output action-message">${escapeHtml(item.client_request_message_display || item.client_request_message || "Aucun message genere.")}</pre>
                 </article>
             `;
         })
@@ -1694,7 +1695,7 @@ function renderCaseDetail(item) {
     const shownStatusLabel = override?.label || item.business_status_label;
     const carrierProfile = CARRIER_PROFILES[resolveCarrierProfile(item.carrier_profile)];
     const documents = item.documents_received?.length
-        ? item.documents_received.join(", ")
+        ? item.documents_received_display || item.documents_received.join(", ")
         : "Aucune piece declaree";
     const missing = item.missing_information_labels?.length
         ? item.missing_information_labels.join(", ")
@@ -1763,15 +1764,15 @@ function renderCaseDetail(item) {
         </div>
         <div>
             <span class="csv-status">Resume operateur</span>
-            <pre class="output">${escapeHtml(item.operator_summary || "Aucun resume disponible.")}</pre>
+            <pre class="output">${escapeHtml(item.operator_summary_display || item.operator_summary || "Aucun resume disponible.")}</pre>
         </div>
         <div>
             <span class="csv-status">Texte de la demande</span>
-            <pre class="output">${escapeHtml(item.claim_text || "Texte non disponible.")}</pre>
+            <pre class="output">${escapeHtml(item.claim_text_display || item.claim_text || "Texte non disponible.")}</pre>
         </div>
         <div>
             <span class="csv-status">Message client suggere</span>
-            <pre class="output">${escapeHtml(item.client_request_message || "Aucun message genere.")}</pre>
+            <pre class="output">${escapeHtml(item.client_request_message_display || item.client_request_message || "Aucun message genere.")}</pre>
         </div>
     `;
 }

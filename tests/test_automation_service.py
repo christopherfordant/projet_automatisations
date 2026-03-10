@@ -82,8 +82,11 @@ def test_claims_intake_missing_info_generates_client_message() -> None:
     assert "Informations manquantes" in result["client_request_subject"]
     assert "Numero dossier" in result["client_request_message"]
     assert "Copie de facture" in result["client_request_message"]
+    assert result["client_request_subject_display"] == result["client_request_subject"]
     assert result["client_request_message_display"] == result["client_request_message"]
     assert result["client_request_message_sections"]
+    assert result["claim_text_display"] == result["claim_text"]
+    assert result["documents_received_display"] == ""
 
 
 def test_document_completeness_returns_missing_required_documents() -> None:
@@ -139,7 +142,9 @@ def test_document_completeness_can_be_ready() -> None:
     assert "Dossier complet" in result["client_request_subject"]
     assert "merci pour votre envoi" in result["client_request_message"].lower()
     assert "salutations distinguees" in result["client_request_message"].lower()
+    assert result["client_request_subject_display"] == result["client_request_subject"]
     assert result["operator_summary_display"] == result["operator_summary"]
+    assert result["document_text_display"]
 
 
 def test_claims_intake_can_attach_verified_web_sources(monkeypatch) -> None:
@@ -176,6 +181,7 @@ def test_claims_intake_can_attach_verified_web_sources(monkeypatch) -> None:
 
     assert result["web_lookup_used"] is True
     assert result["verified_web_sources"][0]["domain"] == "ameli.fr"
+    assert result["verified_web_sources"][0]["snippet_display"] == "Source officielle."
 
 
 def test_claims_intake_selects_company_specific_workflow() -> None:
@@ -198,6 +204,7 @@ def test_claims_intake_selects_company_specific_workflow() -> None:
     assert result["carrier_profile"] == "macif"
     assert result["target_workflow"] == "macif_reclamations_sensibles"
     assert result["target_workflow_label"] == "Triage des reclamations sensibles"
+    assert result["target_workflow_reason_display"]
 
 
 def test_document_completeness_can_attach_verified_web_sources(monkeypatch) -> None:

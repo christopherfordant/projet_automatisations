@@ -170,6 +170,7 @@ class AutomationService:
             payload.web_lookup_enabled,
             missing_information,
         )
+        verified_web_sources = self._decorate_web_sources(verified_web_sources)
         client_request = self._build_claim_missing_info_message(
             customer_id=resolved_customer_id,
             contract_id=resolved_contract_id,
@@ -177,6 +178,7 @@ class AutomationService:
             category_label=self.CATEGORY_LABELS.get(category, category),
         )
         operator_summary = self._flatten_message(str(ai_result["content"]))
+        claim_text_display = self._flatten_message(payload.claim_text)
         result = {
             "module": "claims_intake",
             "carrier_profile": company_profile.code,
@@ -185,9 +187,12 @@ class AutomationService:
             "target_workflow": target_workflow,
             "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
             "target_workflow_reason": company_profile.positioning,
+            "target_workflow_reason_display": self._flatten_message(company_profile.positioning),
             "customer_id": resolved_customer_id,
             "contract_id": resolved_contract_id,
             "claim_text": payload.claim_text,
+            "claim_text_display": claim_text_display,
+            "claim_text_sections": self._split_message_sections(claim_text_display),
             "category": category,
             "priority": priority,
             "missing_information": missing_information,
@@ -195,7 +200,9 @@ class AutomationService:
             "attention_score": attention_score,
             "recommended_next_action": next_action,
             "documents_received": payload.attached_documents,
+            "documents_received_display": ", ".join(payload.attached_documents) if payload.attached_documents else "",
             "client_request_subject": client_request["subject"],
+            "client_request_subject_display": client_request["subject"],
             "client_request_message": client_request["message"],
             "client_request_message_display": client_request["message"],
             "client_request_message_sections": self._split_message_sections(client_request["message"]),
@@ -335,6 +342,7 @@ class AutomationService:
             payload.document_type,
             missing_required,
         )
+        verified_web_sources = self._decorate_web_sources(verified_web_sources)
         request_message = self._build_missing_documents_message(
             profile_label=profile["label"],
             customer_id=payload.customer_id,
@@ -345,6 +353,7 @@ class AutomationService:
             output_channel=payload.output_channel,
         )
         operator_summary = self._flatten_message(str(ai_result["content"]))
+        document_text_display = self._flatten_message(payload.document_text)
 
         return {
             "module": "document_completeness",
@@ -354,10 +363,13 @@ class AutomationService:
             "target_workflow": target_workflow,
             "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
             "target_workflow_reason": company_profile.positioning,
+            "target_workflow_reason_display": self._flatten_message(company_profile.positioning),
             "document_type": payload.document_type,
             "document_type_label": profile["label"],
             "customer_id": payload.customer_id,
             "contract_id": payload.contract_id,
+            "document_text_display": document_text_display,
+            "document_text_sections": self._split_message_sections(document_text_display),
             "required_documents": required_status,
             "optional_documents": optional_status,
             "missing_required_documents": missing_required,
@@ -368,6 +380,7 @@ class AutomationService:
             "message_tone": payload.message_tone,
             "output_channel": payload.output_channel,
             "client_request_subject": request_message["subject"],
+            "client_request_subject_display": request_message["subject"],
             "client_request_message": request_message["message"],
             "client_request_message_display": request_message["message"],
             "client_request_message_sections": self._split_message_sections(request_message["message"]),
@@ -805,6 +818,24 @@ class AutomationService:
             for section in re.split(r"(?<=[.!?])\s+|(?<=:)\s+", message)
             if section.strip()
         ]
+
+    def _decorate_web_sources(
+        self,
+        items: list[dict[str, object]],
+    ) -> list[dict[str, object]]:
+        decorated: list[dict[str, object]] = []
+        for item in items:
+            title = str(item.get("title") or item.get("url") or "")
+            snippet = self._flatten_message(str(item.get("snippet") or ""))
+            decorated.append(
+                {
+                    **item,
+                    "title_display": self._flatten_message(title),
+                    "snippet_display": snippet,
+                    "snippet_sections": self._split_message_sections(snippet),
+                }
+            )
+        return decorated
 
     @staticmethod
     def _count_by_key(items: list[dict[str, object]], key: str) -> dict[str, int]:

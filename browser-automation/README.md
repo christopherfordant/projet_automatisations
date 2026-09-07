@@ -12,11 +12,11 @@ Depuis la racine du projet :
 .\scripts\start_playwright_mcp.ps1
 ```
 
-Le navigateur Edge s’ouvre dans un profil séparé situé dans `browser-automation/profile/`. Ce profil est ignoré par Git et peut contenir une session connectée. Ne le partage jamais.
+Le serveur se connecte à Edge via l’extension officielle Playwright et peut utiliser l’onglet LinkedIn déjà ouvert. L’extension doit être installée manuellement depuis le Chrome Web Store et la connexion au navigateur doit être approuvée.
 
 La configuration est épinglée sur Playwright MCP `0.0.80` afin d’éviter qu’une mise à jour inattendue ne modifie le comportement de l’outil.
 
-Au premier démarrage, connecte-toi manuellement au site concerné. Aucun mot de passe n’est enregistré dans le projet et aucune publication ne doit être automatisée sans validation humaine.
+Tu restes connecté manuellement dans Edge. Aucun mot de passe n’est enregistré dans le projet et aucune publication ne doit être automatisée sans validation humaine.
 
 ## Principe de fonctionnement
 

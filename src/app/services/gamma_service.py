@@ -15,7 +15,11 @@ class GammaService:
         operator_summary: str,
     ) -> dict[str, object]:
         settings = get_settings()
-        normalized_output_type = output_type if output_type in {"presentation", "document", "webpage"} else settings.gamma_default_output_type
+        normalized_output_type = (
+            output_type
+            if output_type in {"presentation", "document", "webpage"}
+            else settings.gamma_default_output_type
+        )
         normalized_points = [item.strip() for item in key_points if item.strip()]
         if not normalized_points:
             normalized_points = [

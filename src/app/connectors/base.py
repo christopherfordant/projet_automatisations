@@ -7,4 +7,3 @@ class ConnectorSpec:
     purpose: str
     input_contract: str
     output_contract: str
-

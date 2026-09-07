@@ -10,6 +10,4 @@ class PromptRequest:
 
 
 class AIProvider(Protocol):
-    async def generate(self, prompt: PromptRequest) -> dict[str, str]:
-        ...
-
+    async def generate(self, prompt: PromptRequest) -> dict[str, str]: ...

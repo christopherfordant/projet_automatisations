@@ -11,4 +11,3 @@ class MockProvider:
                 "compatible OpenAI."
             ),
         }
-

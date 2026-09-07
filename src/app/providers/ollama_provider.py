@@ -25,4 +25,3 @@ class OllamaProvider:
 
         message = data["choices"][0]["message"]["content"]
         return {"provider": "ollama", "model": prompt.model, "content": message}
-

@@ -42,7 +42,9 @@ async def n8n_stack_healthcheck() -> dict[str, object]:
             port=settings.postgres_port,
         ),
     }
-    overall_status = "ok" if all(item["status"] == "up" for item in services.values()) else "degraded"
+    overall_status = (
+        "ok" if all(item["status"] == "up" for item in services.values()) else "degraded"
+    )
     return {
         "status": overall_status,
         "environment": settings.app_env,

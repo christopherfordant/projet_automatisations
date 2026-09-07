@@ -58,6 +58,9 @@ Voir aussi:
 
 - [docs/LOCAL_AI_STACK.md](docs/LOCAL_AI_STACK.md)
 - [docs/N8N_SUPABASE_FLOW.md](docs/N8N_SUPABASE_FLOW.md)
+- [docs/DEVELOPMENT_GUARDRAILS.md](docs/DEVELOPMENT_GUARDRAILS.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [SECURITY.md](SECURITY.md)
 
 ## Sécurité et publication
 
@@ -70,6 +73,16 @@ les données locales, les profils n8n et les profils temporaires Edge sont exclu
 Les workflows n8n exportés sont volontairement dépourvus de credentials. Après import,
 les credentials doivent être recréés dans n8n ou dans le gestionnaire de secrets de
 l'environnement cible. Les données présentes dans les CSV d'exemple sont fictives.
+
+## Contrôle qualité
+
+Avant chaque commit important, lancer :
+
+```powershell
+.\scripts\quality_check.ps1
+```
+
+La CI GitHub exécute automatiquement Ruff, les tests avec couverture, la validation des workflows n8n et une recherche de credentials accidentellement publiés.
 
 Workflows n8n ajoutes:
 

@@ -1,0 +1,54 @@
+name: Quality gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+
+      - name: Install project and development dependencies
+        run: python -m pip install --upgrade pip && pip install -e '.[dev]'
+
+      - name: Ruff lint
+        run: python -m ruff check src tests
+
+      - name: Ruff format
+        run: python -m ruff format --check src tests
+
+      - name: Python tests with coverage
+        run: python -m pytest --cov=src/app --cov-report=term-missing --cov-fail-under=70
+
+      - name: Validate n8n workflow JSON
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          for path in Path('n8n/workflows').glob('*.json'):
+              json.loads(path.read_text(encoding='utf-8'))
+              print(f'valid: {path}')
+
+      - name: Check for accidental credentials
+        shell: bash
+        run: |
+          if git grep -n -I -i -E '(^|[^A-Z])(postgres(ql)?://|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]+|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' -- . ':!*.md' ':!*.html' ':!*.pdf'; then
+            echo 'Potential credential detected.'
+            exit 1
+          fi

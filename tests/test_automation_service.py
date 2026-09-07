@@ -166,7 +166,9 @@ def test_claims_intake_can_attach_verified_web_sources(monkeypatch) -> None:
             }
         ]
 
-    monkeypatch.setattr(service.web_lookup_service, "lookup_claim_sources", fake_lookup_claim_sources)
+    monkeypatch.setattr(
+        service.web_lookup_service, "lookup_claim_sources", fake_lookup_claim_sources
+    )
 
     result = asyncio.run(
         service.run_claims_intake(
@@ -404,4 +406,8 @@ def test_gamma_brief_builds_gamma_ready_payload() -> None:
     assert result["gamma_ready"] is True
     assert result["gamma_output_type"] == "presentation"
     assert "Automatisation des relances" in result["gamma_prompt"]
-    assert result["gamma_key_points"] == ["gain de temps", "moins d'oublis", "meilleure priorisation"]
+    assert result["gamma_key_points"] == [
+        "gain de temps",
+        "moins d'oublis",
+        "meilleure priorisation",
+    ]

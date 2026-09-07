@@ -20,7 +20,9 @@ class DocumentAnalysisRequest(BaseModel):
 
 class DocumentCompletenessRequest(BaseModel):
     document_type: str = Field(..., description="Type de dossier ou document a verifier")
-    carrier_profile: str | None = Field(default="generic", description="Entreprise ou mutuelle cible")
+    carrier_profile: str | None = Field(
+        default="generic", description="Entreprise ou mutuelle cible"
+    )
     customer_id: str | None = Field(default=None, description="Identifiant client si connu")
     contract_id: str | None = Field(default=None, description="Reference dossier si connue")
     document_text: str = Field(..., description="Texte libre ou contexte du dossier")
@@ -35,12 +37,16 @@ class DocumentCompletenessRequest(BaseModel):
 
 
 class ClaimIntakeRequest(BaseModel):
-    carrier_profile: str | None = Field(default="generic", description="Entreprise ou mutuelle cible")
+    carrier_profile: str | None = Field(
+        default="generic", description="Entreprise ou mutuelle cible"
+    )
     customer_id: str | None = Field(default=None, description="Identifiant client si connu")
     contract_id: str | None = Field(default=None, description="Reference contrat si connue")
     channel: str = Field(default="email", description="Canal d'entree")
     claim_text: str = Field(..., description="Demande ou signalement entrant")
-    attached_documents: list[str] = Field(default_factory=list, description="Liste descriptive des pieces")
+    attached_documents: list[str] = Field(
+        default_factory=list, description="Liste descriptive des pieces"
+    )
     web_lookup_enabled: bool = Field(
         default=False,
         description="Active une recherche de guidance sur des sources web officielles autorisees",
@@ -49,7 +55,9 @@ class ClaimIntakeRequest(BaseModel):
 
 
 class ClaimIntakeBatchRequest(BaseModel):
-    items: list[ClaimIntakeRequest] = Field(..., min_length=1, description="Liste des dossiers a traiter")
+    items: list[ClaimIntakeRequest] = Field(
+        ..., min_length=1, description="Liste des dossiers a traiter"
+    )
 
 
 class FollowupAssistantRequest(BaseModel):
@@ -64,8 +72,12 @@ class FollowupAssistantRequest(BaseModel):
     channel: str = Field(default="email", description="Canal d'entree")
     context_text: str = Field(..., description="Contexte libre du dossier ou de la relance")
     attached_documents: list[str] = Field(default_factory=list, description="Pieces deja recues")
-    expected_documents: list[str] = Field(default_factory=list, description="Pieces attendues si connues")
-    outstanding_amount: float | None = Field(default=None, description="Montant en attente si pertinent")
+    expected_documents: list[str] = Field(
+        default_factory=list, description="Pieces attendues si connues"
+    )
+    outstanding_amount: float | None = Field(
+        default=None, description="Montant en attente si pertinent"
+    )
     days_overdue: int | None = Field(default=None, description="Nombre de jours de retard")
     message_tone: str = Field(default="neutral", description="Ton du message client")
     output_channel: str = Field(default="email", description="Canal de sortie")
@@ -80,8 +92,12 @@ class GammaBriefRequest(BaseModel):
     source_module: str = Field(default="claims_intake", description="Module source")
     source_context: str = Field(..., description="Contexte ou resultat source")
     key_points: list[str] = Field(default_factory=list, description="Points cles a mettre en avant")
-    output_type: str = Field(default="presentation", description="presentation, document ou webpage")
-    provider: str | None = Field(default=None, description="Provider IA a utiliser pour enrichir le resume")
+    output_type: str = Field(
+        default="presentation", description="presentation, document ou webpage"
+    )
+    provider: str | None = Field(
+        default=None, description="Provider IA a utiliser pour enrichir le resume"
+    )
 
 
 class OperatorActionLogEntry(BaseModel):

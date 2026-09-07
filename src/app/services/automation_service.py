@@ -94,7 +94,11 @@ class AutomationService:
         },
         "complaint": {
             "label": "Reclamation",
-            "required_documents": ["courrier de reclamation", "numero dossier", "historique echanges"],
+            "required_documents": [
+                "courrier de reclamation",
+                "numero dossier",
+                "historique echanges",
+            ],
             "optional_documents": ["preuve de delai", "capture espace client"],
         },
         "hospitalization": {
@@ -156,7 +160,9 @@ class AutomationService:
             missing_information,
             normalized_text,
         )
-        attention_score = self._compute_attention_score(priority, missing_information, friction_flags)
+        attention_score = self._compute_attention_score(
+            priority, missing_information, friction_flags
+        )
 
         prompt = PromptRequest(
             system_prompt=(
@@ -201,7 +207,9 @@ class AutomationService:
             "carrier_profile_label": company_profile.label,
             "target_company": company_profile.target_company,
             "target_workflow": target_workflow,
-            "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
+            "target_workflow_label": company_profile.workflow_labels.get(
+                target_workflow, target_workflow
+            ),
             "target_workflow_reason": company_profile.positioning,
             "target_workflow_reason_display": self._flatten_message(company_profile.positioning),
             "customer_id": resolved_customer_id,
@@ -216,12 +224,16 @@ class AutomationService:
             "attention_score": attention_score,
             "recommended_next_action": next_action,
             "documents_received": payload.attached_documents,
-            "documents_received_display": ", ".join(payload.attached_documents) if payload.attached_documents else "",
+            "documents_received_display": ", ".join(payload.attached_documents)
+            if payload.attached_documents
+            else "",
             "client_request_subject": client_request["subject"],
             "client_request_subject_display": client_request["subject"],
             "client_request_message": client_request["message"],
             "client_request_message_display": client_request["message"],
-            "client_request_message_sections": self._split_message_sections(client_request["message"]),
+            "client_request_message_sections": self._split_message_sections(
+                client_request["message"]
+            ),
             "web_lookup_used": payload.web_lookup_enabled,
             "verified_web_sources": verified_web_sources,
             "operator_summary": operator_summary,
@@ -232,9 +244,7 @@ class AutomationService:
         }
         return self._decorate_result(result)
 
-    async def run_claims_intake_batch(
-        self, payload: ClaimIntakeBatchRequest
-    ) -> dict[str, object]:
+    async def run_claims_intake_batch(self, payload: ClaimIntakeBatchRequest) -> dict[str, object]:
         results: list[dict[str, object]] = []
         for item in payload.items:
             results.append(await self.run_claims_intake(item))
@@ -244,10 +254,10 @@ class AutomationService:
         summary = {
             "total_items": len(results),
             "high_priority": sum(1 for item in results if item["priority"] == "high"),
-            "critical_attention": sum(1 for item in results if item["attention_level"] == "critical"),
-            "missing_information_cases": sum(
-                1 for item in results if item["missing_information"]
+            "critical_attention": sum(
+                1 for item in results if item["attention_level"] == "critical"
             ),
+            "missing_information_cases": sum(1 for item in results if item["missing_information"]),
             "duplicate_suspicions": sum(1 for item in results if item["duplicate_suspected"]),
             "categories": self._count_by_key(results, "category_label"),
             "recommended_actions": self._count_by_key(results, "recommended_next_action_label"),
@@ -300,7 +310,9 @@ class AutomationService:
         )
 
         normalized_text = payload.document_text.lower()
-        declared_documents = [item.strip().lower() for item in payload.attached_documents if item.strip()]
+        declared_documents = [
+            item.strip().lower() for item in payload.attached_documents if item.strip()
+        ]
         available_tokens = " ".join([normalized_text, *declared_documents])
 
         required_status = [
@@ -377,7 +389,9 @@ class AutomationService:
             "carrier_profile_label": company_profile.label,
             "target_company": company_profile.target_company,
             "target_workflow": target_workflow,
-            "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
+            "target_workflow_label": company_profile.workflow_labels.get(
+                target_workflow, target_workflow
+            ),
             "target_workflow_reason": company_profile.positioning,
             "target_workflow_reason_display": self._flatten_message(company_profile.positioning),
             "document_type": payload.document_type,
@@ -399,7 +413,9 @@ class AutomationService:
             "client_request_subject_display": request_message["subject"],
             "client_request_message": request_message["message"],
             "client_request_message_display": request_message["message"],
-            "client_request_message_sections": self._split_message_sections(request_message["message"]),
+            "client_request_message_sections": self._split_message_sections(
+                request_message["message"]
+            ),
             "web_lookup_used": payload.web_lookup_enabled,
             "verified_web_sources": verified_web_sources,
             "operator_summary": operator_summary,
@@ -420,7 +436,9 @@ class AutomationService:
         expected_documents = [item.strip() for item in payload.expected_documents if item.strip()]
         attached_documents = [item.strip() for item in payload.attached_documents if item.strip()]
         missing_documents = [
-            item for item in expected_documents if item.lower() not in {doc.lower() for doc in attached_documents}
+            item
+            for item in expected_documents
+            if item.lower() not in {doc.lower() for doc in attached_documents}
         ]
         urgency_level = self._derive_followup_urgency(
             followup_type=followup_type,
@@ -463,7 +481,11 @@ class AutomationService:
         )
         operator_summary = self._flatten_message(str(ai_result["content"]))
         context_text_display = self._flatten_message(payload.context_text)
-        status = "blocked" if followup_type == "missing_document" and missing_documents else "ready_to_send"
+        status = (
+            "blocked"
+            if followup_type == "missing_document" and missing_documents
+            else "ready_to_send"
+        )
         if urgency_level == "critical":
             status = "needs_review"
 
@@ -473,7 +495,9 @@ class AutomationService:
             "carrier_profile_label": company_profile.label,
             "target_company": company_profile.target_company,
             "target_workflow": target_workflow,
-            "target_workflow_label": company_profile.workflow_labels.get(target_workflow, target_workflow),
+            "target_workflow_label": company_profile.workflow_labels.get(
+                target_workflow, target_workflow
+            ),
             "target_workflow_reason": company_profile.positioning,
             "target_workflow_reason_display": self._flatten_message(company_profile.positioning),
             "followup_type": followup_type,
@@ -486,7 +510,9 @@ class AutomationService:
             "context_text_sections": self._split_message_sections(context_text_display),
             "expected_documents": expected_documents,
             "attached_documents": attached_documents,
-            "attached_documents_display": ", ".join(attached_documents) if attached_documents else "",
+            "attached_documents_display": ", ".join(attached_documents)
+            if attached_documents
+            else "",
             "missing_documents": missing_documents,
             "missing_documents_display": ", ".join(missing_documents) if missing_documents else "",
             "outstanding_amount": payload.outstanding_amount,
@@ -551,7 +577,9 @@ class AutomationService:
             "source_module": payload.source_module,
             "source_context": payload.source_context,
             "source_context_display": self._flatten_message(payload.source_context),
-            "source_context_sections": self._split_message_sections(self._flatten_message(payload.source_context)),
+            "source_context_sections": self._split_message_sections(
+                self._flatten_message(payload.source_context)
+            ),
             "operator_summary": operator_summary,
             "operator_summary_display": operator_summary,
             "operator_summary_sections": self._split_message_sections(operator_summary),
@@ -655,7 +683,9 @@ class AutomationService:
         missing_information = [
             cls.MISSING_INFO_LABELS.get(item, item) for item in result["missing_information"]
         ]
-        friction_flags = [cls.FRICTION_FLAG_LABELS.get(item, item) for item in result["friction_flags"]]
+        friction_flags = [
+            cls.FRICTION_FLAG_LABELS.get(item, item) for item in result["friction_flags"]
+        ]
         result["category_label"] = cls.CATEGORY_LABELS.get(result["category"], result["category"])
         result["priority_label"] = cls.PRIORITY_LABELS.get(result["priority"], result["priority"])
         result["missing_information_labels"] = missing_information
@@ -716,7 +746,8 @@ class AutomationService:
         ):
             flags.append("complaint_risk")
         if priority == "high" and any(
-            token in normalized_text for token in ("hospital", "chirurg", "prise en charge", "urgence")
+            token in normalized_text
+            for token in ("hospital", "chirurg", "prise en charge", "urgence")
         ):
             flags.append("urgent_medical_context")
         return flags
@@ -834,8 +865,8 @@ class AutomationService:
                     "subject": "",
                     "message": AutomationService._flatten_message(
                         (
-                        f"Dossier {reference} complet pour {profile_label.lower()}. "
-                        "Instruction en cours."
+                            f"Dossier {reference} complet pour {profile_label.lower()}. "
+                            "Instruction en cours."
                         )
                     ),
                 }
@@ -843,9 +874,9 @@ class AutomationService:
                 "subject": "",
                 "message": AutomationService._flatten_message(
                     (
-                    f"Dossier {reference}: merci d'envoyer "
-                    f"{', '.join(missing_required_labels)}. "
-                    f"{'Sans ces pieces, dossier bloque.' if readiness_status == 'blocked' else 'A reception, dossier finalisable.'}"
+                        f"Dossier {reference}: merci d'envoyer "
+                        f"{', '.join(missing_required_labels)}. "
+                        f"{'Sans ces pieces, dossier bloque.' if readiness_status == 'blocked' else 'A reception, dossier finalisable.'}"
                     )
                 ),
             }
@@ -869,11 +900,11 @@ class AutomationService:
                 "subject": f"Dossier complet - {reference}",
                 "message": AutomationService._flatten_message(
                     (
-                    f"{openings.get(tone, openings['neutral'])}\n\n"
-                    f"Votre dossier {reference} est considere comme complet pour le traitement "
-                    f"de la demande de type {profile_label.lower()}.\n"
-                    f"{progress_lines.get(tone, progress_lines['neutral'])}\n\n"
-                    f"{closings.get(channel, closings['email'])}"
+                        f"{openings.get(tone, openings['neutral'])}\n\n"
+                        f"Votre dossier {reference} est considere comme complet pour le traitement "
+                        f"de la demande de type {profile_label.lower()}.\n"
+                        f"{progress_lines.get(tone, progress_lines['neutral'])}\n\n"
+                        f"{closings.get(channel, closings['email'])}"
                     )
                 ),
             }
@@ -923,9 +954,7 @@ class AutomationService:
         )
         return {
             "subject": (
-                ""
-                if channel == "sms"
-                else f"Pieces manquantes pour votre dossier - {reference}"
+                "" if channel == "sms" else f"Pieces manquantes pour votre dossier - {reference}"
             ),
             "message": AutomationService._flatten_message(
                 intro_by_tone.get(tone, intro_by_tone["neutral"]) + missing_lines + outro
@@ -947,9 +976,9 @@ class AutomationService:
                 "subject": f"Dossier complet - {reference}",
                 "message": cls._flatten_message(
                     (
-                    "Bonjour,\n\n"
-                    f"Votre dossier {reference} relatif a {category_label.lower()} peut maintenant etre instruit.\n\n"
-                    "Cordialement,\nService gestion"
+                        "Bonjour,\n\n"
+                        f"Votre dossier {reference} relatif a {category_label.lower()} peut maintenant etre instruit.\n\n"
+                        "Cordialement,\nService gestion"
                     )
                 ),
             }
@@ -959,12 +988,12 @@ class AutomationService:
             "subject": f"Informations manquantes pour votre dossier - {reference}",
             "message": cls._flatten_message(
                 (
-                "Bonjour,\n\n"
-                f"Pour poursuivre le traitement de votre dossier {reference} relatif a {category_label.lower()}, "
-                "merci de nous transmettre les elements suivants :\n"
-                f"{bullet_list}\n\n"
-                "Le dossier restera en attente jusqu'a reception de ces informations.\n\n"
-                "Cordialement,\nService gestion"
+                    "Bonjour,\n\n"
+                    f"Pour poursuivre le traitement de votre dossier {reference} relatif a {category_label.lower()}, "
+                    "merci de nous transmettre les elements suivants :\n"
+                    f"{bullet_list}\n\n"
+                    "Le dossier restera en attente jusqu'a reception de ces informations.\n\n"
+                    "Cordialement,\nService gestion"
                 )
             ),
         }
@@ -1043,7 +1072,11 @@ class AutomationService:
             if followup_type == "missing_document" or missing_documents:
                 return "service_b2b_relances_pieces"
             if followup_type == "invoice":
-                return "service_b2b_reclamations_clients" if urgency_level == "critical" else "service_b2b_tri_demandes"
+                return (
+                    "service_b2b_reclamations_clients"
+                    if urgency_level == "critical"
+                    else "service_b2b_tri_demandes"
+                )
             return "service_b2b_tri_demandes"
         if carrier_profile == "immobilier_syndic":
             if urgency_level == "critical":
@@ -1060,7 +1093,11 @@ class AutomationService:
                 return "cabinet_pieces_comptables_manquantes"
             return "cabinet_preparation_dossiers"
         if carrier_profile == "niort_lab":
-            return "niortlab_batch_supervision" if urgency_level == "critical" else "niortlab_orchestration_multi_entreprise"
+            return (
+                "niortlab_batch_supervision"
+                if urgency_level == "critical"
+                else "niortlab_orchestration_multi_entreprise"
+            )
         if missing_documents:
             return "shared_document_completeness"
         return "shared_claims_intake"
@@ -1087,7 +1124,11 @@ class AutomationService:
         }
 
         if followup_type == "invoice":
-            amount_text = f" pour un montant de {outstanding_amount:.2f} EUR" if outstanding_amount is not None else ""
+            amount_text = (
+                f" pour un montant de {outstanding_amount:.2f} EUR"
+                if outstanding_amount is not None
+                else ""
+            )
             delay_text = f" en attente depuis {days_overdue} jour(s)" if days_overdue else ""
             body = (
                 f"{greeting}, Merci de nous confirmer le traitement de la facture {contract_id or ''}{amount_text}{delay_text}. "
@@ -1100,7 +1141,9 @@ class AutomationService:
                 "Merci de nous confirmer sa validation ou les pieces a completer pour finaliser le traitement."
             )
         else:
-            documents = ", ".join(missing_documents) if missing_documents else "les justificatifs attendus"
+            documents = (
+                ", ".join(missing_documents) if missing_documents else "les justificatifs attendus"
+            )
             body = (
                 f"{greeting}, Pour poursuivre le traitement du dossier {contract_id or ''}, il manque encore: {documents}. "
                 "Merci de nous transmettre ces elements pour debloquer l'instruction."
@@ -1114,12 +1157,17 @@ class AutomationService:
         if output_channel == "courrier":
             body += " Cordialement, Service gestion."
         elif output_channel == "sms":
-            body = body.replace("Merci de nous transmettre ces elements pour debloquer l'instruction.", "Merci d'envoyer les elements manquants rapidement.")
+            body = body.replace(
+                "Merci de nous transmettre ces elements pour debloquer l'instruction.",
+                "Merci d'envoyer les elements manquants rapidement.",
+            )
         else:
             body += " Cordialement, Service gestion."
 
         return {
-            "subject": "" if output_channel == "sms" else subject_map.get(followup_type, "Relance dossier"),
+            "subject": ""
+            if output_channel == "sms"
+            else subject_map.get(followup_type, "Relance dossier"),
             "message": AutomationService._flatten_message(body),
         }
 

@@ -26,7 +26,9 @@ class Settings(BaseSettings):
     perplexity_default_model: str = Field(default="sonar-pro", alias="PERPLEXITY_DEFAULT_MODEL")
     gamma_base_url: str = Field(default="https://public-api.gamma.app", alias="GAMMA_BASE_URL")
     gamma_api_key: str = Field(default="", alias="GAMMA_API_KEY")
-    gamma_default_output_type: str = Field(default="presentation", alias="GAMMA_DEFAULT_OUTPUT_TYPE")
+    gamma_default_output_type: str = Field(
+        default="presentation", alias="GAMMA_DEFAULT_OUTPUT_TYPE"
+    )
     openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
     openai_api_key: str = Field(default="change-me-if-needed", alias="OPENAI_API_KEY")
     n8n_base_url: str = Field(default="http://127.0.0.1:5678", alias="N8N_BASE_URL")

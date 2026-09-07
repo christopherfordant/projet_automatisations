@@ -1,0 +1,120 @@
+{
+  "name": "Mutuelle Full CSV Claims Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mutuelle/full-csv-claims-pipeline",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "bf424d06-87b6-4a3a-9ea9-41dab2ab85cd",
+      "name": "Webhook Full CSV Pipeline",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "mutuelle-full-csv-claims-pipeline"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sourceName = $json.body?.source_name || 'csv_pipeline_import';\nconst provider = $json.body?.provider || 'mock';\nconst csvContent = $json.body?.csv_content || '';\n\nfunction splitCsvLine(line) {\n  const values = [];\n  let current = '';\n  let inQuotes = false;\n  for (let i = 0; i < line.length; i += 1) {\n    const char = line[i];\n    const nextChar = line[i + 1];\n    if (char === '\"') {\n      if (inQuotes && nextChar === '\"') {\n        current += '\"';\n        i += 1;\n      } else {\n        inQuotes = !inQuotes;\n      }\n      continue;\n    }\n    if (char === ',' && !inQuotes) {\n      values.push(current);\n      current = '';\n      continue;\n    }\n    current += char;\n  }\n  values.push(current);\n  return values;\n}\n\nfunction normalizeHeader(header) {\n  return String(header || '').trim().toLowerCase().replace(/ /g, '_').replace(/-/g, '_');\n}\n\nconst lines = csvContent.split(/\\r?\\n/).map((line) => line.trim()).filter(Boolean);\nif (lines.length < 2) {\n  return [{ json: { source_name: sourceName, provider, items: [] } }];\n}\n\nconst headers = splitCsvLine(lines[0]).map(normalizeHeader);\nconst items = lines.slice(1).map((line) => {\n  const values = splitCsvLine(line);\n  const row = {};\n  headers.forEach((header, index) => {\n    row[header] = (values[index] || '').trim();\n  });\n  const attachedDocuments = String(row.attached_documents || row.documents || row.pieces_jointes || '')\n    .split(',')\n    .map((item) => item.trim())\n    .filter(Boolean);\n  return {\n    source_file: sourceName,\n    channel: ['email', 'telephone', 'courrier', 'portail'].includes((row.channel || '').toLowerCase()) ? row.channel.toLowerCase() : 'email',\n    customer_id: row.customer_id || row.client_id || null,\n    contract_id: row.contract_id || row.case_id || row.dossier_id || row.claim_id || null,\n    provider,\n    claim_text: row.claim_text || row.message || row.description || '',\n    attached_documents: attachedDocuments\n  };\n});\n\nreturn [{ json: { source_name: sourceName, provider, items } }];"
+      },
+      "id": "03dec8bb-39ce-4180-a625-4a34cfcdc0e7",
+      "name": "Parse CSV To Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/claims-intake/batch",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  items: $json.items || []\n} }}",
+        "options": {}
+      },
+      "id": "c81fa504-cf93-4cd7-a3fb-0c7521ddd391",
+      "name": "Call FastAPI Batch From CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT public.save_claim_batch(\n  $1,\n  $2,\n  $3::jsonb,\n  $4\n);",
+        "options": {
+          "queryReplacement": "={{ [   'batch_csv_n8n',   'n8n',   JSON.stringify($json),   $('Webhook Full CSV Pipeline').item.json.body.source_name ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        768,
+        0
+      ],
+      "id": "cb12a1e0-aac0-4708-bcdb-88abc221d896",
+      "name": "Execute a SQL query"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Full CSV Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Parse CSV To Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CSV To Items": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI Batch From CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call FastAPI Batch From CSV": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "38af0aa9-d917-4fab-8c28-e36a9a7cc1a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bea7d0a6d925e04adfdbeb8e7fba274ee8031e62bab640ee83f9daefe0dbc1c3"
+  },
+  "nodeGroups": [],
+  "id": "kPShZKhOOC3uRItM",
+  "tags": []
+}

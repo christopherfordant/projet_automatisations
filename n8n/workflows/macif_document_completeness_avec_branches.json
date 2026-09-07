@@ -1,0 +1,386 @@
+{
+  "name": "MACIF Document Completeness Webhook",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mutuelle/claims-intake",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "1455540a-3281-45e9-9d22-e997cbc0d76f",
+      "name": "Webhook Claims Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -160
+      ],
+      "webhookId": "mutuelle-claims-intake-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/claims-intake",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  channel: $json.body.channel || 'email',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  claim_text: $json.body.claim_text || '',\n  attached_documents: $json.body.attached_documents || []\n} }}",
+        "options": {}
+      },
+      "id": "a0f37281-8ce1-4a53-a4dc-e44ce902220e",
+      "name": "Call FastAPI Claims Intake",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -128,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "eb77b971-2fb7-4227-ba47-738b0dc8cbbb",
+              "leftValue": "={{$json.business_status}}",
+              "rightValue": "=blocked",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        80,
+        -160
+      ],
+      "id": "17b91d74-a152-4e98-bf9a-1354a1a62854",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ec6b0995-53db-4c86-99fa-2f3bac85f8c9",
+              "name": "next_action_message",
+              "value": "Demander les documents manquants au client",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        -256
+      ],
+      "id": "53f562c8-67c6-4827-b040-4d9e8b2e4ae1",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e7bd6e8e-fb3c-4e33-a023-6f55d0441596",
+              "name": "next_action_message",
+              "value": "Router vers le traitement normal",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        288,
+        -64
+      ],
+      "id": "8dfd3031-b646-44aa-b558-8cdcdcc6d928",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mutuelle/claims-intake-batch",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "9e9df444-1fce-47a7-9279-5c75744ca53b",
+      "name": "Webhook Claims Intake Batch",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        704,
+        208
+      ],
+      "webhookId": "mutuelle-claims-intake-batch-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/claims-intake/batch",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  items: $json.body.items || []\n} }}",
+        "options": {}
+      },
+      "id": "4cf4e9b5-0ebb-49aa-bebf-58572cd04c25",
+      "name": "Call FastAPI Claims Intake Batch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        992,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "macif/document-completeness",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "76584867-1ed7-4246-859e-37572fc6ab9a",
+      "name": "Webhook MACIF Document Completeness",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        544
+      ],
+      "webhookId": "macif-document-completeness-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8000/automations/document-completeness",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  carrier_profile: 'macif',\n  document_type: $json.body.document_type || 'complaint',\n  customer_id: $json.body.customer_id || null,\n  contract_id: $json.body.contract_id || null,\n  provider: $json.body.provider || 'mock',\n  web_lookup_enabled: $json.body.web_lookup_enabled ?? true,\n  message_tone: $json.body.message_tone || 'neutral',\n  output_channel: $json.body.output_channel || 'email',\n  document_text: $json.body.document_text || '',\n  attached_documents: $json.body.attached_documents || []\n} }}",
+        "options": {}
+      },
+      "id": "9e849661-c6e7-4963-bc69-023d0aa5c6dd",
+      "name": "Call FastAPI MACIF Document Completeness",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        32,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ba8bc90a-344e-4cd2-8714-4974321ed125",
+              "leftValue": "={{$json.readiness_status}}",
+              "rightValue": "blocked",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        240,
+        544
+      ],
+      "id": "e66796c9-183b-44c1-a677-29875bd1f1b0",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cbb766a6-d6e5-44cc-8aa5-5935b9af1971",
+              "name": "=missing_documents_message",
+              "value": "={{ 'Documents manquants : ' + ($json.missing_required_labels || []).join(', ') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        448
+      ],
+      "id": "ecdeb887-2e43-4d3c-bc3f-9a02d5e98d5b",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bd360c6e-3115-48f4-a283-579f23dae8b1",
+              "name": "=documents_status_message",
+              "value": "={{ 'Dossier complet à ' + $json.completion_ratio + '% : prêt à être instruit' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        448,
+        640
+      ],
+      "id": "e08cc8ef-2c6c-4397-bcf9-a0c076c7069b",
+      "name": "Edit Fields3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Claims Intake": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI Claims Intake",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call FastAPI Claims Intake": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook Claims Intake Batch": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI Claims Intake Batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook MACIF Document Completeness": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI MACIF Document Completeness",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call FastAPI MACIF Document Completeness": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "73eba362-beee-42d4-b98e-c791385ddb30",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "36229087fa16c162e5cbd804ebf1c09a5620b030c2342b7f72bf424a065df05b"
+  },
+  "nodeGroups": [],
+  "id": "ZiLn54Mzn3nl8c33",
+  "tags": []
+}

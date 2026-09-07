@@ -59,6 +59,18 @@ Voir aussi:
 - [docs/LOCAL_AI_STACK.md](docs/LOCAL_AI_STACK.md)
 - [docs/N8N_SUPABASE_FLOW.md](docs/N8N_SUPABASE_FLOW.md)
 
+## Sécurité et publication
+
+Les secrets et credentials ne sont pas stockés dans ce dépôt. Avant un lancement local,
+copier les fichiers `.env.example` et `.env.stack.example` vers des fichiers `.env`, puis
+remplacer les valeurs d'exemple par des valeurs locales. Les fichiers `.env`, les journaux,
+les données locales, les profils n8n et les profils temporaires Edge sont exclus par
+`.gitignore`.
+
+Les workflows n8n exportés sont volontairement dépourvus de credentials. Après import,
+les credentials doivent être recréés dans n8n ou dans le gestionnaire de secrets de
+l'environnement cible. Les données présentes dans les CSV d'exemple sont fictives.
+
 Workflows n8n ajoutes:
 
 - `claims intake` unitaire

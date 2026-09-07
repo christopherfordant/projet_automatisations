@@ -21,6 +21,9 @@ node_modules/
 .n8n-backups/
 .n8n-course/
 .edge-pdf-profile*/
+browser-automation/profile/
+browser-automation/logs/
+browser-automation/node_modules/
 *.log
 *.tmp
 *.bak

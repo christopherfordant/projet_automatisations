@@ -2,15 +2,15 @@ from pydantic import BaseModel, Field
 
 
 class AutomationRequest(BaseModel):
-    workflow_name: str = Field(..., description="Nom du workflow metier")
-    customer_context: str = Field(..., description="Contexte client ou contrat")
-    raw_input: str = Field(..., description="Texte ou instruction entrante")
+    workflow_name: str = Field(..., min_length=1, description="Nom du workflow metier")
+    customer_context: str = Field(..., min_length=1, description="Contexte client ou contrat")
+    raw_input: str = Field(..., min_length=1, description="Texte ou instruction entrante")
     provider: str | None = Field(default=None, description="Provider IA a utiliser")
 
 
 class DocumentAnalysisRequest(BaseModel):
-    document_name: str
-    document_text: str
+    document_name: str = Field(..., min_length=1)
+    document_text: str = Field(..., min_length=1)
     expected_output: str = Field(
         default="Resume, points critiques, donnees structurees",
         description="Format attendu de l'analyse",
@@ -19,13 +19,15 @@ class DocumentAnalysisRequest(BaseModel):
 
 
 class DocumentCompletenessRequest(BaseModel):
-    document_type: str = Field(..., description="Type de dossier ou document a verifier")
+    document_type: str = Field(
+        ..., min_length=1, description="Type de dossier ou document a verifier"
+    )
     carrier_profile: str | None = Field(
         default="generic", description="Entreprise ou mutuelle cible"
     )
     customer_id: str | None = Field(default=None, description="Identifiant client si connu")
     contract_id: str | None = Field(default=None, description="Reference dossier si connue")
-    document_text: str = Field(..., description="Texte libre ou contexte du dossier")
+    document_text: str = Field(..., min_length=1, description="Texte libre ou contexte du dossier")
     attached_documents: list[str] = Field(default_factory=list, description="Pieces deja declarees")
     message_tone: str = Field(default="neutral", description="Ton du message client a generer")
     output_channel: str = Field(default="email", description="Canal de sortie du message client")
@@ -43,7 +45,7 @@ class ClaimIntakeRequest(BaseModel):
     customer_id: str | None = Field(default=None, description="Identifiant client si connu")
     contract_id: str | None = Field(default=None, description="Reference contrat si connue")
     channel: str = Field(default="email", description="Canal d'entree")
-    claim_text: str = Field(..., description="Demande ou signalement entrant")
+    claim_text: str = Field(..., min_length=1, description="Demande ou signalement entrant")
     attached_documents: list[str] = Field(
         default_factory=list, description="Liste descriptive des pieces"
     )
@@ -70,7 +72,9 @@ class FollowupAssistantRequest(BaseModel):
     contract_id: str | None = Field(default=None, description="Reference dossier si connue")
     recipient_name: str | None = Field(default=None, description="Nom du destinataire si connu")
     channel: str = Field(default="email", description="Canal d'entree")
-    context_text: str = Field(..., description="Contexte libre du dossier ou de la relance")
+    context_text: str = Field(
+        ..., min_length=1, description="Contexte libre du dossier ou de la relance"
+    )
     attached_documents: list[str] = Field(default_factory=list, description="Pieces deja recues")
     expected_documents: list[str] = Field(
         default_factory=list, description="Pieces attendues si connues"
@@ -86,11 +90,11 @@ class FollowupAssistantRequest(BaseModel):
 
 class GammaBriefRequest(BaseModel):
     carrier_profile: str | None = Field(default="generic", description="Entreprise cible")
-    title: str = Field(..., description="Titre du livrable a generer")
+    title: str = Field(..., min_length=1, description="Titre du livrable a generer")
     audience: str = Field(default="direction", description="Audience cible")
-    objective: str = Field(..., description="Objectif du livrable")
+    objective: str = Field(..., min_length=1, description="Objectif du livrable")
     source_module: str = Field(default="claims_intake", description="Module source")
-    source_context: str = Field(..., description="Contexte ou resultat source")
+    source_context: str = Field(..., min_length=1, description="Contexte ou resultat source")
     key_points: list[str] = Field(default_factory=list, description="Points cles a mettre en avant")
     output_type: str = Field(
         default="presentation", description="presentation, document ou webpage"

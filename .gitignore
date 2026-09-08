@@ -24,6 +24,7 @@ node_modules/
 browser-automation/profile/
 browser-automation/logs/
 browser-automation/node_modules/
+.npm-cache/
 *.log
 *.tmp
 *.bak

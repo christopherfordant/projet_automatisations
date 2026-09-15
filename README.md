@@ -22,6 +22,14 @@ environnement de démonstration, non déployé chez un client.
 
 ![Workflow Make — réception et orientation](docs/assets/make-workflow.png)
 
+## Démonstration n8n
+
+Workflow personnel réalisé avec n8n pour réceptionner et traiter des dossiers, vérifier leur
+complétude, suivre les statuts et conserver une trace des actions. Projet de démonstration développé
+pour consolider mes compétences en automatisation et intégration d’API, sans déploiement chez un client.
+
+![Workflows n8n personnels](docs/assets/n8n-workflow.png)
+
 ## Architecture
 
 - `src/app/main.py`: point d'entree FastAPI.

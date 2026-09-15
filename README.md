@@ -14,6 +14,14 @@ Le socle est pense pour:
 - separer les besoins par domaine: analyse documentaire, triage, extraction, orchestration, connecteurs SI;
 - rester industrialisable vers un deploiement plus avance par la suite.
 
+## Démonstration Make
+
+Prototype personnel réalisé avec Make : réception de dossiers via webhook, contrôle de complétude,
+orientation, stockage dans Airtable, notifications Slack et gestion des erreurs. Réalisé dans un
+environnement de démonstration, non déployé chez un client.
+
+![Workflow Make — réception et orientation](docs/assets/make-workflow.png)
+
 ## Architecture
 
 - `src/app/main.py`: point d'entree FastAPI.

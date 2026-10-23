@@ -205,12 +205,7 @@ def test_local_variants_remain_distinct():
     assert basic_code == variant_code
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="Tracked workflow uses four save arguments, local SQL declares three",
-)
-def test_workflow_save_matches_local_sql_arity():
+def test_workflow_save_matches_idempotent_sql_arity():
     workflow = json.loads(
         (ROOT / "n8n/workflows/full_csv_claims_pipeline_supabase_idempotency.json").read_text(
             encoding="utf-8-sig"
@@ -219,7 +214,7 @@ def test_workflow_save_matches_local_sql_arity():
     query = next(
         n["parameters"]["query"] for n in workflow["nodes"] if n["type"].endswith(".postgres")
     )
-    sql = (ROOT / "supabase/schema/002_mutuelle_ingest_helpers.sql").read_text(encoding="utf-8-sig")
+    sql = (ROOT / "supabase/schema/003_claim_batch_idempotency.sql").read_text(encoding="utf-8-sig")
     signature = re.search(
         r"function\s+public\.save_claim_batch\s*\((.*?)\)\s*returns", sql, re.I | re.S
     ).group(1)
@@ -227,7 +222,7 @@ def test_workflow_save_matches_local_sql_arity():
 
 
 @pytest.mark.skip(
-    reason="Separate real PostgreSQL recipe required; no database connection authorized in this suite"
+    reason="PostgreSQL proof is a separate opt-in recipe, not part of the offline suite"
 )
 def test_real_postgres_function_transaction_and_replay():
     """See docs/RECETTE_PIPELINE_ISOLEE.md; a stub does not validate PostgreSQL."""

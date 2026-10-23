@@ -44,22 +44,18 @@ def no_network(monkeypatch, isolated_loop):
 
 
 @pytest.fixture
-def parse_csv():
-    workflow = json.loads(
-        (ROOT / "n8n/workflows/full_csv_claims_pipeline.json").read_text(encoding="utf-8-sig")
-    )
-    code = next(n["parameters"]["jsCode"] for n in workflow["nodes"] if n["type"].endswith(".code"))
+def run_node_code():
     node = shutil.which("node")
     if node is None:
         pytest.fail("Existing Node.js is required; nothing is installed automatically")
     runner = Path(__file__).with_name("run_parser.cjs")
 
-    def parse(content, **metadata):
+    def run(code, body):
         # No inherited tokens, NODE_OPTIONS, user profile, or network globals in the VM.
         env = {k: os.environ[k] for k in ("SystemRoot", "WINDIR", "TEMP", "TMP") if k in os.environ}
         completed = subprocess.run(
             [node, str(runner)],
-            input=json.dumps({"code": code, "body": {"csv_content": content, **metadata}}),
+            input=json.dumps({"code": code, "body": body}),
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -68,7 +64,20 @@ def parse_csv():
             cwd=ROOT,
             check=True,
         )
-        return json.loads(completed.stdout)[0]["json"]
+        return json.loads(completed.stdout)
+
+    return run
+
+
+@pytest.fixture
+def parse_csv(run_node_code):
+    workflow = json.loads(
+        (ROOT / "n8n/workflows/full_csv_claims_pipeline.json").read_text(encoding="utf-8-sig")
+    )
+    code = next(n["parameters"]["jsCode"] for n in workflow["nodes"] if n["type"].endswith(".code"))
+
+    def parse(content, **metadata):
+        return run_node_code(code, {"csv_content": content, **metadata})[0]["json"]
 
     return parse
 

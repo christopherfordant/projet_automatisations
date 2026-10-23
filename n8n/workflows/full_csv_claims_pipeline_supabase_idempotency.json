@@ -33,6 +33,19 @@
     },
     {
       "parameters": {
+        "jsCode": "const key = $('Webhook Full CSV Pipeline').item.json.body.idempotency_key;\nif (typeof key !== 'string' || key.length < 1 || key.length > 200 || key.trim() !== key) {\n  throw new Error('IDEMPOTENCY_KEY_REQUIRED: provide a stable non-empty key for retries');\n}\nreturn [{ json: { ...$json, idempotency_key: key } }];"
+      },
+      "id": "offline-idempotency-guard",
+      "name": "Require Idempotency Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        430,
+        150
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "http://127.0.0.1:8000/automations/claims-intake/batch",
         "sendBody": true,
@@ -54,7 +67,7 @@
         "operation": "executeQuery",
         "query": "SELECT public.save_claim_batch(\n  $1,\n  $2,\n  $3::jsonb,\n  $4\n);",
         "options": {
-          "queryReplacement": "={{ [   'batch_csv_n8n',   'n8n',   JSON.stringify($json),   $('Webhook Full CSV Pipeline').item.json.body.source_name ] }}"
+          "queryReplacement": "={{ [ $('Parse CSV To Items').item.json.source_name, 'n8n', JSON.stringify($json), $('Require Idempotency Key').item.json.idempotency_key ] }}"
         }
       },
       "type": "n8n-nodes-base.postgres",
@@ -84,7 +97,7 @@
       "main": [
         [
           {
-            "node": "Call FastAPI Batch From CSV",
+            "node": "Require Idempotency Key",
             "type": "main",
             "index": 0
           }
@@ -96,6 +109,17 @@
         [
           {
             "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Require Idempotency Key": {
+      "main": [
+        [
+          {
+            "node": "Call FastAPI Batch From CSV",
             "type": "main",
             "index": 0
           }

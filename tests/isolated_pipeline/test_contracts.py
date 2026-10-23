@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import re
+import subprocess
 
 import pytest
 
@@ -44,18 +45,69 @@ def test_commas_escaped_quotes_and_documents(parse_csv):
     assert result["items"][0]["attached_documents"] == ["facture", "devis"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="Parser splits lines before quoted CSV fields: known local defect",
-)
-def test_multiline_csv_is_one_item(parse_csv):
-    result = parse_csv('channel,claim_text\nemail,"Premiere ligne\nDeuxieme ligne"')
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_multiline_csv_is_one_item(parse_csv, offline_api, newline):
+    app, _ = offline_api
+    result = parse_csv(f'channel,claim_text{newline}email,"Premiere ligne{newline}Deuxieme ligne"')
     assert len(result["items"]) == 1
-    assert result["items"][0]["claim_text"] == "Premiere ligne\nDeuxieme ligne"
+    assert result["items"][0]["claim_text"] == f"Premiere ligne{newline}Deuxieme ligne"
+    response = post_batch(app, result)
+    assert response.status_code == 200
+    assert response.json()["summary"]["total_items"] == 1
 
 
-@pytest.mark.parametrize("csv", ["", "channel,claim_text", "channel,claim_text\nemail,"])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_multiline_quotes_commas_and_following_record(parse_csv, newline):
+    content = (
+        f"channel,claim_text,documents{newline}"
+        f'email,"Bonjour, dit ""Alex""{newline}Suite","facture,devis"{newline}'
+        f"portail,Autre question,{newline}"
+    )
+    items = parse_csv(content)["items"]
+    assert len(items) == 2
+    assert items[0]["claim_text"] == f'Bonjour, dit "Alex"{newline}Suite'
+    assert items[0]["attached_documents"] == ["facture", "devis"]
+    assert items[1]["claim_text"] == "Autre question"
+    assert items[1]["attached_documents"] == []
+
+
+def test_blank_records_are_ignored_but_blank_lines_inside_quotes_are_preserved(parse_csv):
+    content = '\r\n  \r\nchannel,claim_text\r\n\r\nemail,"Debut\n\nFin"\r\n \t\r\n'
+    items = parse_csv(content)["items"]
+    assert len(items) == 1
+    assert items[0]["claim_text"] == "Debut\n\nFin"
+
+
+def test_empty_fields_and_outer_whitespace_remain_supported(parse_csv):
+    items = parse_csv('channel,claim_text,customer_id,documents\n email , "Question" , ,""')[
+        "items"
+    ]
+    assert items[0]["channel"] == "email"
+    assert items[0]["claim_text"] == "Question"
+    assert items[0]["customer_id"] is None
+    assert items[0]["attached_documents"] == []
+
+
+@pytest.mark.parametrize(
+    "record",
+    [
+        'email,"Non ferme',
+        'email,"Premiere ligne\nNon ferme',
+        'email,Texte"invalide',
+        'email,"Ferme"suite',
+        'email,Valide\nportail,"Non ferme',
+    ],
+)
+def test_malformed_csv_rejected_without_returning_partial_items(parse_csv, record):
+    with pytest.raises(subprocess.CalledProcessError) as error:
+        parse_csv("channel,claim_text\n" + record)
+    assert "CSV_INVALID_FORMAT" in error.value.stderr
+    assert error.value.stdout == ""
+
+
+@pytest.mark.parametrize(
+    "csv", ["", "channel,claim_text", "channel,claim_text\nemail,", 'channel,claim_text\nemail,""']
+)
 def test_empty_or_invalid_payload_rejected_by_actual_schema(parse_csv, offline_api, csv):
     app, _ = offline_api
     response = post_batch(app, parse_csv(csv))

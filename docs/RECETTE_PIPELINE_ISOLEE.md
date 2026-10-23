@@ -1,15 +1,38 @@
 # Recette locale isolee du pipeline CSV
 
 Lot technique du 23 octobre 2026. Aucun changement du workflow connecte, des
-credentials, des fichiers applicatifs existants, du portfolio, des notes ou du CV.
-Pas de deploiement. Les resultats concernent les sources locales a la base Git
-`d07f1da`, pas une fonction installee en base distante.
+credentials, des sources Python, du portfolio, des notes ou du CV. Seuls les
+noeuds Code des deux exports dans la copie Git isolee ont ete corriges pour le
+CSV multiligne, apres la recette initiale `aa6c6c4c`. Pas d'import ou de
+deploiement. Ces resultats ne decrivent pas une fonction installee en base distante.
+
+## Correction CSV multiligne dans la copie isolee
+
+Le parseur lit maintenant le texte entier avec un etat de champ entre guillemets.
+LF et CRLF terminent un enregistrement uniquement hors guillemets ; leur contenu
+est conserve a l'interieur du champ. Les guillemets doubles echappes et les
+virgules entre guillemets restent pris en charge. Les lignes vides hors champ
+sont ignorees, les lignes vides dans un champ sont conservees. Les normalisations,
+alias, valeurs par defaut et contrat de sortie sont preserves. Le meme parseur
+est present dans les deux exports, qui gardent leurs trois et quatre noeuds.
+
+Un guillemet non ferme, un guillemet dans un champ non cite ou du texte non blanc
+apres une fermeture provoquent `CSV_INVALID_FORMAT`. Aucun lot partiel n'est
+retourne, meme si des lignes valides precedent l'erreur. Les espaces autour d'un
+champ cite restent toleres. Ce rejet explicite remplace une interpretation
+silencieuse des CSV malformes ; il ne constitue pas une nouvelle regle metier.
+La propagation de cette erreur dans le moteur n8n n'a pas ete recettee.
+
+Le test multiligne n'est plus marque `xfail`. La divergence SQL reste inchangee
+et conserve son echec attendu strict. Aucun chemin de webhook, credential,
+parametre HTTP, appel SQL ou regle metier n'a ete modifie. Le diff depuis
+`aa6c6c4c` est la proposition de correction exportable, pas une activation.
 
 ## Contrats compares
 
 | Etape | Source locale | Contrat et conclusion |
 | --- | --- | --- |
-| CSV simple | `n8n/workflows/full_csv_claims_pipeline.json`, noeud Code | Trois noeuds : Webhook, Code, HTTP. Alias de champs, normalisation des en-tetes, virgules et guillemets echappes sur une ligne |
+| CSV simple | `n8n/workflows/full_csv_claims_pipeline.json`, noeud Code | Trois noeuds : Webhook, Code, HTTP. Alias de champs, normalisation des en-tetes, virgules, guillemets echappes et champs multilignes |
 | Variante avec sauvegarde | `n8n/workflows/full_csv_claims_pipeline_supabase_idempotency.json` | Quatre noeuds ; appel SQL avec quatre arguments. Le nom du fichier ne prouve pas l'idempotence |
 | API | `src/app/schemas/automation.py`, `src/app/api/routes/automations.py` | `items` non vide et `claim_text` non vide. Le test inclut le vrai routeur ASGI, pas une nouvelle implementation de la regle |
 | Doublons | `src/app/services/automation_service.py` | Signalement intra-lot par contrat/categorie, puis client/categorie, sinon texte ; pas de suppression ni de registre inter-envois dans cette methode |
@@ -25,7 +48,7 @@ de tester la sauvegarde locale. Il ne tranche pas l'intention du quatrieme argum
 de la variante. Deux options restent distinctes : adapter une copie du workflow
 au contrat a trois arguments, ou definir une fonction a quatre arguments avec une
 semantique explicite. Ne pas supprimer cet argument ou inventer un verrou
-d'idempotence automatiquement. Aucun correctif applicatif n'est livre ici.
+d'idempotence automatiquement. Aucun correctif de sauvegarde n'est livre ici.
 
 ## Execution sans services
 
@@ -55,17 +78,20 @@ securite destinee a du code malveillant arbitraire.
 
 ## Resultats et leur portee
 
-Recette executee : **14 reussites, 2 echecs attendus stricts, 1 test ignore**.
-Les deux `xfail(strict=True)` documentent des defauts reproduits : ils ne sont
-pas des tests reussis du comportement souhaite. Une correction les fait passer
-en `XPASS`, ce qui oblige a reviser leur statut. La suite reste verte avec ces
-limites connues ; cela ne constitue pas une recette complete du pipeline.
+Recette actuelle executee : **26 reussites, 1 echec attendu strict, 1 test ignore**.
+La recette initiale comptait 14 reussites, 2 echecs attendus et 1 test ignore.
+Le `xfail(strict=True, raises=AssertionError)` restant documente l'ecart SQL :
+ce n'est pas un test reussi du comportement souhaite. Sa correction donnera un
+`XPASS`, obligeant a reviser son statut. La suite reste verte avec cette limite
+connue ; cela ne constitue pas une recette complete du pipeline.
 
 | Cas | Resultat observe | Portee |
 | --- | --- | --- |
 | CSV nominal, alias, canal, virgules/guillemets et pieces jointes | Reussite | Code CSV original extrait et schema/route API reels en memoire |
-| Champ CSV multiligne | Echec attendu strict | Decoupage par ligne avant lecture des guillemets : deux elements au lieu d'un |
-| Fichier vide, en-tete seul, texte vide | HTTP 422 | Rejet par le schema reel ; pas de notification ou sauvegarde |
+| Champ CSV multiligne LF/CRLF, guillemets, virgules et enregistrement suivant | Reussite | Transformation corrigee ; un champ multiligne reste un champ, route ASGI validee en memoire |
+| Lignes vides et champs vides | Reussite | Lignes hors champ ignorees, ligne vide interne preservee, champ vide conserve avant validation API |
+| CSV malforme, dont guillemets non fermes | Rejet explicite | Erreur CSV_INVALID_FORMAT, aucune sortie partielle ; pas une execution n8n |
+| Fichier vide, en-tete seul, texte vide ou cite vide | HTTP 422 | Rejet par le schema reel ; pas de notification ou sauvegarde |
 | Canal inconnu | Repli sur email | Comportement constate, pas une nouvelle regle validee commercialement |
 | Deux dossiers proches dans un lot | Deux elements conserves et marques suspects | Signalement intra-lot, pas suppression |
 | Deux envois du meme lot d'un element | Deux reponses sans suspicion inter-lots | Un store memoire de test peut garder deux elements ; la base reelle n'est pas validee |
@@ -98,7 +124,7 @@ faire pointer ce protocole vers Supabase ou une base locale contenant des donnee
 
 1. Clarifier le contrat de sauvegarde voulu et l'intention du quatrieme argument.
 2. Proposer un diff distinct du workflow ou du SQL, sans activation.
-3. Corriger le CSV multiligne dans une copie et passer le test correspondant.
+3. Faire une revue du diff CSV deja corrige dans cette copie, sans l'importer automatiquement.
 4. Recetter la base jetable seulement dans un lot autorise, puis le moteur n8n
    avec substituts avant toute connexion reelle.
 

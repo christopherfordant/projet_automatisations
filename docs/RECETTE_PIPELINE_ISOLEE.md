@@ -141,7 +141,13 @@ Rapports bruts et empreintes hors depot public. Seuls tests, migration, protocol
 et correction de l'export deja suivi sont versionnes. Aucun import, activation,
 fusion, deploiement du pipeline ou modification des notes.
 
-Prochaine etape : revue de la migration et des privileges du role cible, puis
-recette du moteur n8n dans un environnement sans effets externes avec une cle
-stable. Ne pas annoncer cette garantie active sur le workflow connecte avant
-migration/import/permissions/recette correspondants.
+Complement du 23 octobre : la recherche historique et la recette du moteur n8n
+isole sont maintenant documentees dans
+[PREUVES_EXECUTIONS_N8N_2026-10-23.md](PREUVES_EXECUTIONS_N8N_2026-10-23.md).
+Les 41 tests hors moteur et les sept groupes PostgreSQL precedents ont ete
+reutilises sans campagne complete. Dix executions moteur complementaires sont
+archivees hors depot public. Aucun correctif applicatif n'a ete necessaire.
+
+Prochaine etape : revue de la migration, du plan d'integration et des privileges
+du role cible. Ne pas annoncer cette garantie active sur le workflow connecte
+avant migration/import/permissions/recette correspondants explicitement autorises.
